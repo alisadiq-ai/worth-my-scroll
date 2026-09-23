@@ -1,6 +1,6 @@
 # Worth My Scroll landing page
 
-Deployed to Vercel at Ali’s request. No AWS resources, domain purchases, store submissions, or GitHub visibility changes were made.
+Deployed to Vercel at Ali’s request. The GitHub repository was subsequently made public at Ali’s request. No AWS resources, domain purchases, or store submissions were made.
 
 ## Preview
 
@@ -43,7 +43,7 @@ Live URL: https://worth-my-scroll.vercel.app
 - `.vercelignore` limits deployment inputs to the page, demo, fonts, logo, build script, privacy text, and license. Credentials and extension source are not uploaded.
 - The production `/privacy` route and `/LICENSE.txt` are publicly accessible independently of GitHub.
 - GitHub auto-deploy connection is not established: Vercel requested a GitHub login connection. CLI deployments work with the approved CLI login.
-- The repository remains private. Publishing the repository or creating an accessible release is a separate step before visitors can use its source-install links.
+- The repository is public at https://github.com/alisadiq-ai/worth-my-scroll. The landing page’s GitHub and source-install links are accessible to visitors.
 
 Deploy updates from the linked repository:
 
