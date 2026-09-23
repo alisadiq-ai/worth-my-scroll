@@ -61,7 +61,7 @@ The earlier form-helper browser checks above describe historical versions, not t
 
 ## Popup polish and scoring recovery (0.2.7)
 
-Ali confirmed the native FavStash save flow works in the installed extension. His 22-second real-use recording is included as a compressed MP4 with a README preview; the original MOV is untouched. The video shows v0.2.6, before the popup changes below.
+Ali confirmed the native FavStash save flow works in the installed extension. A five-second GIF from his 22-second real-use recording shows preference selection, a rated post, and the Why panel. FFmpeg joins three moments, crops to the feed, and exports a looping 12 fps GIF; its duration and representative frames were checked. The README embeds this loop directly. The original MOV is untouched. The recording shows v0.2.6, before the popup changes below.
 
 The toolbar icons and popup share the same w/arrow mark. The collapsed usage row explicitly says Est.; the helper now names ChatGPT and Claude. Feed status derives from recent heartbeat activity, pending evaluations, visible errors, and retry state instead of only the enabled preference. Connection verification no longer claims the feed is connected.
 

@@ -8,11 +8,11 @@ Worth My Scroll is a Chrome extension that scores LinkedIn posts against **your 
 
 [Get started](#get-started) · [Save ideas to FavStash](#turn-a-good-post-into-your-next-idea) · [Privacy](docs/PRIVACY.md) · [MIT license](LICENSE)
 
-## Watch it on a real LinkedIn feed
+## See it in five seconds
 
-[![Watch the 22-second Worth My Scroll demo: personal preferences, colored post ratings, and the Why radar chart.](docs/demo/linkedin-feed-preview.jpg)](https://github.com/alisadiq-ai/worth-my-scroll/blob/main/docs/demo/linkedin-feed-demo.mp4)
+![Worth My Scroll in action: select your preferences, see a post get rated, then open Why for its score breakdown.](docs/demo/linkedin-feed-demo.gif)
 
-**[▶ Watch the demo (22 seconds)](https://github.com/alisadiq-ai/worth-my-scroll/blob/main/docs/demo/linkedin-feed-demo.mp4)** · Recorded on a real account. The recording shows v0.2.6; newer versions improve connection status and the popup copy.
+Your preferences → a rated post → the **Why?** breakdown. Five-second loop from real LinkedIn usage, edited for pace. Recorded on v0.2.6; the latest popup has clearer status and estimated costs.
 
 ## A LinkedIn feed that makes sense for you
 
