@@ -57,3 +57,12 @@ Live LinkedIn copying revealed a native `https://lnkd.in/p/<id>` URL, which the 
 Save to Stash now opens FavStash's native `?url=…&note=…` route. Removed the FavStash content script, injected helper, temporary session handoff store, and old `#wms` protocol. The URL contract was checked against the FavStash implementation, including source/note length limits. All 24 unit tests, TypeScript checking, and the build passed. Regression coverage includes native short links, parameter encoding, invalid input rejection, and blocking the removed handoff message. README illustrations were visually checked in Chrome.
 
 The earlier form-helper browser checks above describe historical versions, not the current native flow. The isolated browser harness now checks only the outgoing URL contract. Production prefill and the user's installed-extension flow remain pending the FavStash Amplify release and a Chrome extension reload. A scheduled follow-up tracks the owning FavStash task.
+
+
+## Popup polish and scoring recovery (0.2.7)
+
+Ali confirmed the native FavStash save flow works in the installed extension. His 22-second real-use recording is included as a compressed MP4 with a README preview; the original MOV is untouched. The video shows v0.2.6, before the popup changes below.
+
+The toolbar icons and popup share the same w/arrow mark. The collapsed usage row explicitly says Est.; the helper now names ChatGPT and Claude. Feed status derives from recent heartbeat activity, pending evaluations, visible errors, and retry state instead of only the enabled preference. Connection verification no longer claims the feed is connected.
+
+Temporary network, rate-limit, and server failures receive one delayed automatic retry per visible post. Key, billing, invalid-response, and budget errors do not auto-retry. A Retry scoring action resets failed post attempts without paying for a synthetic connection test. Saving changed preferences, resuming, or increasing the budget also restarts failed posts. Local tests verify the delay and retry cap, error classification, and popup status; 27 tests, type checking, and build passed. The popup was visually checked in a local browser preview. Live acceptance of this revision needs an extension reload and LinkedIn refresh.

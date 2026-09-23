@@ -1,3 +1,4 @@
+import {feedStatus} from './feed-status';
 import {detectProvider,PROVIDERS,type Provider} from './provider';
 import {BASE_PRICING,DEFAULT_SETTINGS,DEFAULT_PREFERENCES,perThousand,summarize,type Settings,type Pricing,type Verdict} from './core';
 import {fixtures} from './fixtures';import {mountBadge} from './badge';
@@ -28,7 +29,6 @@ function renderState(){
  if($('spend'))$('spend').textContent=`$${(u.estimatedSpend||0).toFixed(4)}`;
  if($('connection')){$('connection').textContent=state.hasKey?PROVIDERS[state.provider as Provider||'gateway'].name:'No key connected';$('connection').classList.toggle('connected',state.hasKey);}
  if($('keyStatus'))$('keyStatus').textContent=state.hasKey?`A key is saved ${state.remembered?'on this device':'for this browser session'}.`:'Paste a Jev or Vercel Gateway key. Provider detected automatically.';
- if($('statusLabel'))$('statusLabel').textContent=state.settings.enabled&&state.hasKey?'Scoring is on':'Scoring is paused';
  if($('connect'))$('connect').textContent=state.hasKey?'Test & start scoring':'Connect & start scoring';
  if($('keySetup')&&state.hasKey)($('keySetup') as HTMLDetailsElement).open=false;
  if($('pause')){$('pause').textContent=state.settings.enabled?'Pause scoring':'Resume scoring';($('pause') as HTMLButtonElement).disabled=!state.hasKey;}
@@ -37,18 +37,19 @@ function renderState(){
 }
 function renderFeedHealth(){
  const el=$('feedHealth');if(!el)return;
- const h=state.feedHealth;
- if(!state.settings.enabled){el.textContent='Feed scoring is paused.';return;}
- if(!h||Date.now()-h.at>20000){el.textContent='Feed not connected. Reload the extension, then refresh LinkedIn.';return;}
- if(h.errors){el.textContent=state.feedError?.message||'Some posts could not be scored. Test the connection below to retry.';return;}
- el.textContent=h.pending?`Scoring ${h.pending} post${h.pending===1?'':'s'}…`:`LinkedIn connected · ${h.scored} annotated post${h.scored===1?'':'s'}${h.detected===0?' · waiting for feed posts':''}`;
+ const status=feedStatus(state);
+ el.textContent=status.detail;
+ if($('statusLabel'))$('statusLabel').textContent=status.label;
+ document.querySelector('.session-status')?.setAttribute('data-state',status.tone);
+ if($('retryScoring'))$('retryScoring').hidden=!status.retry;
+
 }
-const brand=`<a class="brand" href="popup.html"><span class="mark">w<span>↗</span></span><span>worth my<br><b>scroll.</b><small class="by-favstash">by FavStash</small></span></a>`;
+const brand=`<a class="brand" href="popup.html"><img class="mark brand-logo" src="icon128.png" alt="" width="46" height="46"><span>worth my<br><b>scroll.</b><small class="by-favstash">by FavStash</small></span></a>`;
 const previewRibbon=!isExtension?'<div class="preview-ribbon">LOCAL PREVIEW · Illustrative ratings. Load the Chrome extension for live Jev scoring.</div>':'';
 const nav=`<header>${brand}<nav><a href="popup.html" class="${mode==='options'?'selected':''}">Your preferences</a><a href="demo.html" class="${mode==='demo'?'selected':''}">Try the feed <span>↗</span></a></nav><span class="version">INTERNAL TEST FEED / 0.2</span></header>`;
-function preferencesPanel(){return `<section class="panel"><div class="section-label">01 / TUNE YOUR SIGNAL</div><div class="panel-title"><h2>What’s worth your time?</h2><span id="charCount" class="muted"></span></div><p class="muted">Write like you’re telling a friend what you want more of. Change it for any scrolling session.</p><label class="sr-only" for="preferences">Your feed preferences</label><textarea id="preferences" maxlength="3000" rows="7" placeholder="I’m building… I want to learn… I’d like to connect with… Skip…"></textarea><div class="tip"><span>✳</span><p>Need a hand? Ask ChatGPT to write your preferences, then paste them here. <button id="copyPrompt" class="text-button">Copy a prompt ↗</button></p></div><div class="save-row"><span class="muted">Your interests. Your filter.</span><button id="savePrefs" class="primary">Save preferences <span>↗</span></button></div></section>`;}
+function preferencesPanel(){return `<section class="panel"><div class="section-label">01 / TUNE YOUR SIGNAL</div><div class="panel-title"><h2>What’s worth your time?</h2><span id="charCount" class="muted"></span></div><p class="muted">Write like you’re telling a friend what you want more of. Change it for any scrolling session.</p><label class="sr-only" for="preferences">Your feed preferences</label><textarea id="preferences" maxlength="3000" rows="7" placeholder="I’m building… I want to learn… I’d like to connect with… Skip…"></textarea><div class="tip"><span>✳</span><p>Need a hand? Ask ChatGPT or Claude to write your preferences. Refine the result, then paste it here. <button id="copyPrompt" class="text-button">Copy a prompt ↗</button></p></div><div class="save-row"><span class="muted">Your interests. Your filter.</span><button id="savePrefs" class="primary">Save preferences <span>↗</span></button></div></section>`;}
 function bindCommon(){
- bind('copyPrompt',async()=>{await navigator.clipboard.writeText(chatPrompt);toast('Prompt copied. Paste it into ChatGPT.');});
+ bind('copyPrompt',async()=>{await navigator.clipboard.writeText(chatPrompt);toast('Prompt copied. Paste into ChatGPT or Claude, refine the result, then paste it here.');});
  $('preferences')?.addEventListener('input',()=>{$('charCount').textContent=`${($('preferences') as HTMLTextAreaElement).value.length}/3,000`;});
  bind('savePrefs',async()=>{await save(false);toast(isExtension?'Preferences saved. New ratings will use your updated interests.':'Preview preferences saved. Install the extension for live scoring.');});
 }
@@ -77,11 +78,11 @@ function mountPopup(){
  document.body.classList.add('popup');
  document.body.innerHTML=`<div class="popup-header">${brand}<span class="small-tag">Jev inside</span></div>
  <div class="session-status"><span class="status-dot"></span><span id="statusLabel">Scoring is paused</span><button id="pause" class="text-button">Resume scoring</button></div>
- <p id="feedHealth" class="feed-health" role="status" aria-live="polite"></p><section class="popup-section"><label for="preferences" class="popup-heading">What’s worth your time?</label><p class="muted">Your interests, your people, your next idea.</p><textarea id="preferences" maxlength="3000" rows="5" placeholder="I’m building… I’d like to learn… Less of…"></textarea><div class="popup-meta"><span id="charCount"></span><button class="text-button" id="savePrefs">Save preferences</button></div><p class="prompt-tip">Let ChatGPT help you write this. <button id="copyPrompt" class="text-button">Copy prompt ↗</button></p></section>
+ <p id="feedHealth" class="feed-health" role="status" aria-live="polite"></p><button id="retryScoring" class="text-button retry-scoring" hidden>Retry scoring</button><section class="popup-section"><label for="preferences" class="popup-heading">What’s worth your time?</label><p class="muted">Your interests, your people, your next idea.</p><textarea id="preferences" maxlength="3000" rows="5" placeholder="I’m building… I’d like to learn… Less of…"></textarea><div class="popup-meta"><span id="charCount"></span><button class="text-button" id="savePrefs">Save preferences</button></div><p class="prompt-tip">Let ChatGPT / Claude help you write this. <button id="copyPrompt" class="text-button">Copy prompt ↗</button><br>Refine the answer, then paste your preferences above.</p></section>
  <details id="keySetup" class="popup-section key-setup" open><summary><span>Your connection</span><span id="connection">No key connected</span></summary><p id="keyStatus" class="muted"></p><label for="apiKey" class="sr-only">Jev or Vercel Gateway API key</label><input id="apiKey" class="key-input" type="password" autocomplete="off" spellcheck="false" placeholder="Paste Jev or Vercel Gateway key"><p id="detected" class="provider-hint">Auto-detects your provider</p><label id="providerRow" class="provider-row" hidden>Unrecognized format — choose provider<select id="provider"><option value="">Choose…</option><option value="typesafe">TypeSafe / Jev direct</option><option value="gateway">Vercel AI Gateway</option></select></label><label class="check"><input type="checkbox" id="remember">Remember key on this device</label><p class="fine">Stored in this Chrome profile, never synced or sent to us. Sent only to your selected provider for authentication. Otherwise clears when Chrome closes.</p><div class="key-links"><a href="https://console.typesafe.ai/keys" target="_blank" rel="noreferrer">Get Jev key ↗</a><a href="https://vercel.com/ai-gateway" target="_blank" rel="noreferrer">Get Gateway key ↗</a><button id="removeKey" class="text-button">Remove key</button></div></details>
  <label class="check popup-consent" id="consentRow"><input id="consent" type="checkbox"><span>Allow visible post text and my preferences to be sent to Jev, directly or through Vercel, for scoring.</span></label>
  <button id="connect" class="primary wide">Connect & start scoring</button><p id="connectResult" class="connect-result" role="status" aria-live="polite"></p>
- <details class="popup-advanced"><summary>Usage & controls <span><b id="cost">$0.042</b> / 1,000 posts</span></summary><label class="limit">Daily request limit <input id="dailyLimit" type="number" min="1" max="5000"></label><button id="saveLimit" class="text-button">Save limit</button><div class="mini-stats"><span><b id="count">0</b> scored</span><span><b id="latency">—</b> average</span><span><b id="spend">$0</b> estimated</span></div><p id="costDetail" class="fine"></p><p id="priceDetail" class="fine"></p><button id="clearCache" class="text-button">Clear cached ratings</button></details>
+ <details class="popup-advanced"><summary>Usage & controls <span>Est. <b id="cost">$0.042</b> / 1,000 posts</span></summary><label class="limit">Daily request limit <input id="dailyLimit" type="number" min="1" max="5000"></label><button id="saveLimit" class="text-button">Save limit</button><div class="mini-stats"><span><b id="count">0</b> scored</span><span><b id="latency">—</b> average</span><span><b id="spend">$0</b> estimated</span></div><p id="costDetail" class="fine"></p><p id="priceDetail" class="fine"></p><button id="clearCache" class="text-button">Clear cached ratings</button></details>
  <div class="popup-footer"><span>Made for your kind of interesting.</span><a href="https://www.favstash.app" target="_blank" rel="noreferrer">by FavStash ↗</a></div><div id="toast" role="status" aria-live="polite"></div>`;
  bindCommon();
  $('apiKey').addEventListener('input',()=>{const key=($('apiKey') as HTMLInputElement).value.trim();const detected=detectProvider(key);$('detected').textContent=detected?`${PROVIDERS[detected].name} detected`:key?'Choose your provider below':'Auto-detects your provider';$('providerRow').hidden=!key||!!detected;});
@@ -98,9 +99,10 @@ function mountPopup(){
    if(key){await rpc('SAVE_KEY',{key,remember:($('remember') as HTMLInputElement).checked,provider:($('provider') as HTMLSelectElement).value||undefined});($('apiKey') as HTMLInputElement).value='';}
    const v=await rpc('TEST_KEY');
    await rpc('SAVE_SETTINGS',{settings:{preferences,consent,enabled:true,dailyLimit}});
-   await load();result.textContent=`Connected · ${(v.ms/1000).toFixed(2)}s. Your LinkedIn feed is ready.`;
+   await load();result.textContent=`Connected · ${(v.ms/1000).toFixed(2)}s. Connection verified. Feed status is shown above.`;
   }catch(e){result.classList.add('error');result.textContent=(e as Error).message;throw e;}
  });
+ bind('retryScoring',async()=>{await rpc('RETRY_SCORING');$('feedHealth').textContent='Retry requested. Waiting for your feed…';$('retryScoring').hidden=true;});
  bind('pause',async()=>{await rpc('SAVE_SETTINGS',{settings:{...state.settings,enabled:!state.settings.enabled}});await load();});
  bind('removeKey',async()=>{await rpc('REMOVE_KEY');await load();($('keySetup') as HTMLDetailsElement).open=true;$('connectResult').textContent='Key removed. Scoring paused.';});
  bind('saveLimit',async()=>{await rpc('SAVE_SETTINGS',{settings:{...state.settings,dailyLimit:Number(($('dailyLimit') as HTMLInputElement).value)}});await load();toast('Daily request limit saved.');});
@@ -109,4 +111,4 @@ function mountPopup(){
 if(mode==='demo')mountDemo();else mountPopup();
 void load().catch(e=>toast(e.message,true));
 
-if(mode!=='demo'&&isExtension)setInterval(()=>void rpc('GET_STATE').then(next=>{state.feedHealth=next.feedHealth;state.feedError=next.feedError;renderFeedHealth();}).catch(()=>{}),3000);
+if(mode!=='demo'&&isExtension)setInterval(()=>void rpc('GET_STATE').then(next=>{state={...state,...next};renderFeedHealth();}).catch(()=>{$('statusLabel').textContent='Extension disconnected';$('feedHealth').textContent='Reopen the popup, then refresh LinkedIn.';}),3000);

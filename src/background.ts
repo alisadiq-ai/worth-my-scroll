@@ -1,5 +1,5 @@
 import {resolveProvider,type Provider} from './provider';
-import {BASE_PRICING,DEFAULT_SETTINGS,MODEL,cacheKey,evaluate,type Settings,type Verdict,type Pricing} from './core';
+import {EvaluationError,BASE_PRICING,DEFAULT_SETTINGS,MODEL,cacheKey,evaluate,type Settings,type Verdict,type Pricing} from './core';
 import {stashSaveUrl} from './favstash';
 type Usage={day:string;attempts:number;count:number;input:number;output:number;ms:number;estimatedSpend:number};
 type Cache=Record<string,{at:number;verdict:Verdict}>;
@@ -10,8 +10,8 @@ function exclusive<T>(fn:()=>Promise<T>):Promise<T>{const next=lock.then(fn);loc
 async function settings():Promise<Settings>{return {...DEFAULT_SETTINGS,...(await chrome.storage.local.get<{settings?:Settings}>('settings')).settings};}
 async function getKey():Promise<string|undefined>{const s=await chrome.storage.session.get<{gatewayKey?:string}>('gatewayKey');if(s.gatewayKey)return s.gatewayKey;return (await chrome.storage.local.get<{gatewayKey?:string}>('gatewayKey')).gatewayKey;}
 async function provider():Promise<Provider|undefined>{const key=await getKey();if(!key)return;const {keyProvider}=await chrome.storage.local.get<{keyProvider?:Provider}>('keyProvider');return resolveProvider(key,keyProvider);}
-async function revision(){return (await chrome.storage.local.get('scoringRevision')).scoringRevision||0;}
-async function restartScoring(){await chrome.storage.local.set({scoringRevision:Date.now()});await chrome.storage.session.remove('feedError');}
+async function revision():Promise<number>{const value=(await chrome.storage.local.get('scoringRevision')).scoringRevision;return typeof value==='number'?value:0;}
+async function restartScoring(){await chrome.storage.local.set({scoringRevision:Math.max(Date.now(),await revision()+1)});await chrome.storage.session.remove('feedError');}
 async function usage():Promise<Usage>{return (await chrome.storage.local.get<{usage?:Usage}>('usage')).usage||freshUsage();}
 async function pricing():Promise<Pricing>{if(await provider()==='typesafe')return BASE_PRICING;return (await chrome.storage.local.get<{pricing?:Pricing}>('pricing')).pricing||BASE_PRICING;}
 async function refreshPricing(){if(await provider()==='typesafe')return;try{const r=await fetch('https://ai-gateway.vercel.sh/v1/models',{signal:AbortSignal.timeout(7000),redirect:'error'});if(!r.ok)return;const model=(await r.json()).data?.find((m:any)=>m.id===MODEL);const input=Number(model?.pricing?.input),output=Number(model?.pricing?.output);if(Number.isFinite(input)&&Number.isFinite(output)&&input>=0&&output>=0)await chrome.storage.local.set({pricing:{input,output,checkedAt:Date.now(),source:'catalog'}});}catch{/* keep dated snapshot */}}
@@ -34,10 +34,10 @@ async function score(post:unknown):Promise<Verdict>{
   try{
    const latest=await settings();
    if(!latest.enabled||!latest.consent||latest.preferences!==s.preferences||await getKey()!==key)throw new Error('Preferences changed or scoring paused.');
-   if(Date.now()<blockedUntil)throw new Error('Jev cooling down after an error. Try again in one minute.');
+   if(Date.now()<blockedUntil)throw new EvaluationError('Jev cooling down after a temporary error.',true);
    await exclusive(async()=>{const u=await usage();const day=freshUsage().day;if(u.day!==day){u.day=day;u.attempts=0;}if(u.attempts>=latest.dailyLimit)throw new Error('Daily request limit reached. Adjust it in settings.');u.attempts++;await chrome.storage.local.set({usage:u});});
    let verdict:Verdict;
-   try{verdict=await evaluate(post,s.preferences,key,selectedProvider);}catch(e){blockedUntil=Date.now()+60000;throw e;}
+   try{verdict=await evaluate(post,s.preferences,key,selectedProvider);}catch(e){if(e instanceof EvaluationError&&e.retryable)blockedUntil=Date.now()+60000;throw e;}
    await exclusive(async()=>{const u=await usage();const p=await pricing();u.count++;u.input+=verdict.inputTokens;u.output+=verdict.outputTokens;u.ms+=verdict.ms;u.estimatedSpend+=verdict.inputTokens*p.input+verdict.outputTokens*p.output;const c:Cache=(await chrome.storage.local.get<{cache?:Cache}>('cache')).cache||{};c[hash]={at:Date.now(),verdict};const entries=Object.entries(c).sort((a,b)=>b[1].at-a[1].at).slice(0,500);await chrome.storage.local.set({usage:u,cache:Object.fromEntries(entries)});});
    return verdict;
   }finally{const next=waiters.shift();if(next)next();else active--;}
@@ -53,7 +53,7 @@ async function handle(message:any,sender:chrome.runtime.MessageSender){
  let linkedIn=false;try{const u=new URL(sender.url||'');linkedIn=u.origin==='https://www.linkedin.com'&&u.pathname.startsWith('/feed');}catch{}
  if(!extensionPage&&(!linkedIn||!publicTypes.has(message?.type)))throw new Error('Request not allowed.');
  if(message?.type==='GET_PUBLIC'){
-  if(linkedIn&&message.health){const h=message.health;const count=(n:unknown)=>typeof n==='number'&&Number.isInteger(n)&&n>=0?Math.min(n,10000):0;await chrome.storage.session.set({feedHealth:{at:Date.now(),version:typeof h.version==='string'?h.version.slice(0,20):'',scored:count(h.scored),pending:count(h.pending),errors:count(h.errors),detected:count(h.detected)}});}
+  if(linkedIn&&message.health){const h=message.health;const count=(n:unknown)=>typeof n==='number'&&Number.isInteger(n)&&n>=0?Math.min(n,10000):0;await chrome.storage.session.set({feedHealth:{at:Date.now(),version:typeof h.version==='string'?h.version.slice(0,20):'',scored:count(h.scored),pending:count(h.pending),errors:count(h.errors),detected:count(h.detected),retrying:count(h.retrying)}});}
   const s=await settings();return {enabled:s.enabled&&s.consent&&!!await getKey(),preferences:s.preferences,revision:await revision()};
  }
 
@@ -70,7 +70,7 @@ async function handle(message:any,sender:chrome.runtime.MessageSender){
    if(!Number.isInteger(input.dailyLimit)||input.dailyLimit<1||input.dailyLimit>5000)throw new Error('Daily limit must be between 1 and 5,000.');
    const s:Settings={preferences:input.preferences.trim(),enabled:input.enabled===true,consent:input.consent===true,dailyLimit:input.dailyLimit};
    if(s.enabled&&(!s.consent||!await getKey()))throw new Error('Connect your key and accept the data notice first.');
-   await chrome.storage.local.set({settings:s});return s;
+   const previous=await settings();await chrome.storage.local.set({settings:s});if(s.preferences!==previous.preferences||(!previous.enabled&&s.enabled)||s.dailyLimit>previous.dailyLimit)await restartScoring();return s;
   }
   case 'SAVE_KEY':{
    if(typeof message.key!=='string'||message.key.trim().length<20||message.key.length>500||/\s/.test(message.key.trim()))throw new Error('Paste a valid Jev or Vercel AI Gateway key.');
@@ -80,11 +80,12 @@ async function handle(message:any,sender:chrome.runtime.MessageSender){
    await (message.remember?chrome.storage.local:chrome.storage.session).set({gatewayKey:message.key.trim()});blockedUntil=0;await restartScoring();void refreshPricing();return {saved:true,provider:selected};
   }
   case 'REMOVE_KEY':await chrome.storage.local.remove('gatewayKey');await chrome.storage.session.remove('gatewayKey');await chrome.storage.local.set({settings:{...await settings(),enabled:false}});return {removed:true};
+  case 'RETRY_SCORING':blockedUntil=0;await restartScoring();return {restarted:true};
   case 'TEST_KEY':{const key=await getKey();if(!key)throw new Error('Add a Jev or Gateway key first.');const v=await evaluate('We shipped an AI invoice search feature. Combining exact invoice-number matching with embeddings improved our 80-query test from 61 to 74 correct results.',DEFAULT_SETTINGS.preferences,key,await provider());blockedUntil=0;await restartScoring();return v;}
   case 'CLEAR_CACHE':await exclusive(()=>chrome.storage.local.remove('cache'));return {cleared:true};
   case 'REFRESH_PRICE':await refreshPricing();return pricing();
   default:throw new Error('Unsupported action.');
  }
 }
-chrome.runtime.onMessage.addListener((message,sender,respond)=>{handle(message,sender).then(data=>respond({ok:true,data})).catch(error=>respond({ok:false,error:error instanceof Error?error.message:'Something went wrong.'}));return true;});
+chrome.runtime.onMessage.addListener((message,sender,respond)=>{handle(message,sender).then(data=>respond({ok:true,data})).catch(error=>respond({ok:false,error:error instanceof Error?error.message:'Something went wrong.',retryAt:error instanceof EvaluationError&&error.retryable?Math.max(blockedUntil,Date.now()+60000):undefined}));return true;});
 chrome.runtime.onInstalled.addListener(()=>{void ready.then(async()=>{if(!(await chrome.storage.local.get<{settings?:Settings}>('settings')).settings)await chrome.storage.local.set({settings:DEFAULT_SETTINGS});void refreshPricing();});});

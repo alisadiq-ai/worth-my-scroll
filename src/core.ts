@@ -52,16 +52,17 @@ export function parseResponse(data: any, ms=0, provider:Provider='gateway'): Ver
  const confidences=Object.values(data.answers).map((a:any)=>a.confidence).filter((n:any)=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=1);
  return {confidence:confidences.length?Math.round(confidences.reduce((a:number,b:number)=>a+b,0)/confidences.length*100):undefined,...summarize({fit:scores.fit,substance:scores.substance,value:scores.value,slop:scores.slop,recreate:scores.recreate,bait:Math.round(b.probability*100)}),ms,inputTokens:number(data.usage?.inputTokens),outputTokens:number(data.usage?.outputTokens)};
 }
+export class EvaluationError extends Error { constructor(message:string,public retryable=false){super(message);} }
 export async function evaluate(post:string,preferences:string,key:string, override?:Provider): Promise<Verdict> {
  validateInput(post,preferences);
  const provider=resolveProvider(key,override), config=PROVIDERS[provider];
  const started=performance.now(); let response:Response;
  try {response=await fetch(config.endpoint,{method:'POST',headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json'},body:JSON.stringify(payload(post,preferences,provider)),signal:AbortSignal.timeout(20000),redirect:'error'});}
- catch {throw new Error(`${config.name} could not be reached within 20 seconds. Try again.`);}
+ catch {throw new EvaluationError(`${config.name} could not be reached within 20 seconds.`,true);}
  if(!response.ok) {
   const errors:Record<number,string>={401:'Gateway key was rejected. Check your key.',403:'Gateway access is blocked. Check verification and billing on the key’s Vercel team.',402:'Gateway credits are required on the key’s Vercel team.',429:'Gateway rate limit reached. Please wait before retrying.'};
   const direct:Record<number,string>={401:'TypeSafe key was rejected. Check your key.',403:'TypeSafe access is blocked. Check your account.',402:'TypeSafe credits are required.',429:'TypeSafe rate limit reached. Please wait before retrying.',529:'TypeSafe is temporarily overloaded. Please retry later.'};
-  throw new Error((provider==='gateway'?errors:direct)[response.status]||`${config.name} request failed (${response.status}). Post left unchanged.`);
+  throw new EvaluationError((provider==='gateway'?errors:direct)[response.status]||`${config.name} request failed (${response.status}). Post left unchanged.`,response.status===429||response.status>=500);
  }
  return parseResponse(await response.json(),Math.round(performance.now()-started),provider);
 }

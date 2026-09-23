@@ -8,6 +8,12 @@ Worth My Scroll is a Chrome extension that scores LinkedIn posts against **your 
 
 [Get started](#get-started) · [Save ideas to FavStash](#turn-a-good-post-into-your-next-idea) · [Privacy](docs/PRIVACY.md) · [MIT license](LICENSE)
 
+## Watch it on a real LinkedIn feed
+
+[![Watch the 22-second Worth My Scroll demo: personal preferences, colored post ratings, and the Why radar chart.](docs/demo/linkedin-feed-preview.jpg)](https://github.com/alisadiq-ai/worth-my-scroll/blob/main/docs/demo/linkedin-feed-demo.mp4)
+
+**[▶ Watch the demo (22 seconds)](https://github.com/alisadiq-ai/worth-my-scroll/blob/main/docs/demo/linkedin-feed-demo.mp4)** · Recorded on a real account. The recording shows v0.2.6; newer versions improve connection status and the popup copy.
+
 ## A LinkedIn feed that makes sense for you
 
 Your next useful connection might be a founder sharing a hard lesson, a builder showing a working demo, or someone solving a problem you care about. Describe what you want to see. Worth My Scroll gives each visible post a personal relevance and quality rating.
@@ -28,7 +34,7 @@ Type your preferences directly in the popup. For example:
 
 > I want founder updates, builders shipping products with AI, and practical implementation details. Prioritize real demos, experiments, results, and honest tradeoffs. Skip vague motivation, exaggerated AI hype, and comment-to-unlock teasers.
 
-Make it your own: designers, researchers, marketers, recruiters, and founders can all follow different signals. The popup includes a **Copy prompt** button if you want ChatGPT to help write your preferences. **No OpenAI API key is needed.**
+Make it your own: designers, researchers, marketers, recruiters, and founders can all follow different signals. The popup includes a **Copy prompt** button if you want ChatGPT or Claude to help write your preferences. Copy the prompt, refine the answer, and paste it back into the popup. **No OpenAI API key is needed.**
 
 ## Turn a good post into your next idea
 

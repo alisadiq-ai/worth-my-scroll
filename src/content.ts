@@ -5,18 +5,18 @@ const style=document.createElement('style');style.textContent='.wms-rated{outlin
 for(const [file,weight] of [['sora-regular.ttf','400'],['sora-semibold.ttf','600']]){const font=new FontFace('WMS Sora',`url(${chrome.runtime.getURL('fonts/'+file)})`,{weight});void font.load().then(f=>document.fonts.add(f)).catch(()=>{});}
 const version=chrome.runtime.getManifest().version;document.documentElement.dataset.wmsVersion=version;
 let enabled=false,preferences='',revision=0,epoch=0,busy=0;
-const seen=new Map<HTMLElement,{text:string;epoch:number;status:string}>();
+const seen=new Map<HTMLElement,{text:string;epoch:number;status:string;retryAt?:number;retries?:number}>();
 const visible=new Set<HTMLElement>();
-async function send(message:any){const r=await chrome.runtime.sendMessage(message);if(!r?.ok)throw new Error(r?.error||'Extension unavailable');return r.data;}
+async function send(message:any){const r=await chrome.runtime.sendMessage(message);if(!r?.ok)throw Object.assign(new Error(r?.error||'Extension unavailable'),{retryAt:r?.retryAt});return r.data;}
 function clear(el:HTMLElement){el.querySelector(':scope > wms-rating')?.remove();el.classList.remove('wms-rated');el.style.removeProperty('--wms-outline');}
-async function refresh(){try{const p=await send({type:'GET_PUBLIC',health:{version,scored:document.querySelectorAll('wms-rating').length,pending:busy,errors:[...seen.values()].filter(v=>v.status==='error').length,detected:document.querySelectorAll(POST_SELECTOR).length}});if(p.enabled!==enabled||p.preferences!==preferences||p.revision!==revision){revision=p.revision;enabled=p.enabled;preferences=p.preferences;epoch++;for(const el of seen.keys())clear(el);seen.clear();scan();}}catch{enabled=false;for(const el of seen.keys())clear(el);}}
+async function refresh(){try{const p=await send({type:'GET_PUBLIC',health:{version,scored:document.querySelectorAll('wms-rating').length,pending:busy,errors:[...seen.entries()].filter(([el,v])=>visible.has(el)&&v.status==='error'&&!v.retryAt).length,retrying:[...seen.entries()].filter(([el,v])=>visible.has(el)&&v.status==='error'&&!!v.retryAt).length,detected:document.querySelectorAll(POST_SELECTOR).length}});if(p.enabled!==enabled||p.preferences!==preferences||p.revision!==revision){revision=p.revision;enabled=p.enabled;preferences=p.preferences;epoch++;for(const el of seen.keys())clear(el);seen.clear();scan();}else schedule();}catch{enabled=false;for(const el of seen.keys())clear(el);}}
 async function process(el:HTMLElement){
  if(!enabled||busy>=2||!el.isConnected||!visible.has(el))return;
  const text=extractPost(el);if(!text){clear(el);seen.delete(el);return;}
- const previous=seen.get(el);if(previous?.text===text&&previous.epoch===epoch){if(previous.status!=='done'||el.querySelector(':scope > wms-rating'))return;}
- const currentEpoch=epoch;seen.set(el,{text,epoch,status:'pending'});busy++;
+ const previous=seen.get(el);if(previous?.text===text&&previous.epoch===epoch){if(previous.status==='error'){if(!previous.retryAt||Date.now()<previous.retryAt)return;}else if(previous.status!=='done'||el.querySelector(':scope > wms-rating'))return;}
+ const currentEpoch=epoch;const retries=previous?.text===text&&previous.epoch===epoch?(previous.retries||0):0;const isRetry=previous?.status==='error';seen.set(el,{text,epoch,status:'pending',retries});busy++;
  try{const v:Verdict=await send({type:'EVALUATE',post:text});if(enabled&&epoch===currentEpoch&&el.isConnected&&extractPost(el)===text){mountBadge(el,v,()=>seen.set(el,{text,epoch,status:'dismissed'}));seen.set(el,{text,epoch,status:'done'});}}
- catch{if(epoch===currentEpoch){clear(el);seen.set(el,{text,epoch,status:'error'});}}
+ catch(error){if(epoch===currentEpoch){clear(el);const attempts=retries+(isRetry?1:0);const next=(error as {retryAt?:number}).retryAt;seen.set(el,{text,epoch,status:'error',retries:attempts,retryAt:attempts<1&&typeof next==='number'&&Number.isFinite(next)?next:undefined});}}
  finally{busy--;schedule();}
 }
 const observer=new IntersectionObserver(entries=>{for(const entry of entries){const el=entry.target as HTMLElement;if(entry.isIntersecting)visible.add(el);else visible.delete(el);}schedule();},{rootMargin:'120px 0px'});

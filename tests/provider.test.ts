@@ -16,3 +16,15 @@ test('each credential is sent only to its selected endpoint; provider caches are
  globalThis.fetch=async(url,init)=>{requests.push({url,body:JSON.parse(String(init?.body))});return new Response('',{status:401});};
  try{await assert.rejects(evaluate('A long enough post to evaluate','AI founders','ts_fake_test_credential'),/TypeSafe key/);await assert.rejects(evaluate('A long enough post to evaluate','AI founders','vck_fake_test_credential'),/Gateway key/);await assert.rejects(evaluate('A long enough post to evaluate','AI founders','unknown_credential'),/Choose the provider/);assert.equal(requests.length,2);assert.equal(requests[0].url,'https://api.typesafe.ai/v1/systemone');assert.equal(requests[0].body.questions.bait.type,'noul');assert.equal(requests[1].url,'https://ai-gateway.vercel.sh/v1/evaluate');assert.equal(requests[1].body.questions.bait.type,'boolean');assert.notEqual(await cacheKey('post','prefs','gateway'),await cacheKey('post','prefs','typesafe'));}finally{globalThis.fetch=old;}
 });
+
+test('only temporary provider failures are eligible for automatic retry',async()=>{
+ const old=globalThis.fetch;
+ try{
+  for(const status of [401,402,403,429,500,503]){
+   globalThis.fetch=async()=>new Response('',{status});
+   await assert.rejects(evaluate('A long enough post to evaluate','AI founders','vck_fake_test_credential'),(e:any)=>e.retryable===(status===429||status>=500));
+  }
+  globalThis.fetch=async()=>{throw Error('Network disconnected');};
+  await assert.rejects(evaluate('A long enough post to evaluate','AI founders','vck_fake_test_credential'),(e:any)=>e.retryable===true);
+ }finally{globalThis.fetch=old;}
+});

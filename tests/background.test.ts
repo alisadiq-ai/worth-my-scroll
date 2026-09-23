@@ -29,6 +29,7 @@ test('worker protects credentials, deduplicates requests, caches, budgets and pa
   const handoff=await send({type:'OPEN_STASH',url:'https://lnkd.in/p/dwbZVKeC',note:'Recreate potential: 70/100'},feed);assert.equal(handoff.ok,true);assert.equal(opened.length,1);const target=new URL(opened[0]);assert.equal(target.origin,'https://www.favstash.app');assert.equal(target.pathname,'/dashboard/stash');assert.equal(target.searchParams.get('url'),'https://lnkd.in/p/dwbZVKeC');assert.equal(target.searchParams.get('note'),'Recreate potential: 70/100');assert.equal(target.hash,'');assert.equal(session.handoffs,undefined);
   assert.equal((await send({type:'GET_HANDOFF',id:'legacy'},{id:'test',url:'https://www.favstash.app/dashboard/stash'})).ok,false);
   assert.equal((await send({type:'OPEN_STASH',url:'https://evil.test/',note:''},feed)).ok,false);assert.equal(opened.length,1);
+  const beforeRetry=(await send({type:'GET_PUBLIC'},feed)).data.revision;const callsBeforeRetry=calls;assert.equal((await send({type:'RETRY_SCORING'},feed)).ok,false);assert.equal((await send({type:'RETRY_SCORING'})).ok,true);assert.ok((await send({type:'GET_PUBLIC'},feed)).data.revision>beforeRetry);assert.equal(calls,callsBeforeRetry,'retrying feed does not spend a connection-test request');
   assert.equal((await send({type:'REMOVE_KEY'})).ok,true);assert.equal(session.gatewayKey,undefined);
  }finally{globalThis.fetch=oldFetch;}
 });

@@ -23,3 +23,23 @@ test('visible feed recovers after connection test and restores removed annotatio
   w.document.querySelector('wms-rating').remove();await until(()=>w.document.querySelectorAll('wms-rating').length===1);assert.equal(calls,3,'request restored; worker supplies cached result');
  }finally{dom.window.close();}
 });
+
+test('temporary failures retry once after the delay without a connection test',async()=>{
+ const bundle=await build({entryPoints:['src/content.ts'],bundle:true,format:'iife',write:false,platform:'browser'});
+ const dom=new JSDOM('<head></head><body><article role="listitem" componentkey="update-card-test"><p data-testid="expandable-text-box">A practical builder update with detailed implementation lessons and benchmark results.</p></article></body>',{url:'https://www.linkedin.com/feed/',runScripts:'outside-only',pretendToBeVisual:true});
+ const w=dom.window as any;const polls:Array<()=>void>=[];let now=1000,calls=0;let health:any;
+ w.Date.now=()=>now;w.setInterval=(callback:()=>void)=>{polls.push(callback);return 1;};
+ w.FontFace=class {load(){return Promise.reject(Error('Test font'));}};
+ w.IntersectionObserver=class {constructor(private callback:any){}observe(target:any){queueMicrotask(()=>this.callback([{target,isIntersecting:true}]));}unobserve(){}};
+ w.chrome={runtime:{getManifest:()=>({version:'0.2.7'}),getURL:(p:string)=>p,sendMessage:async(m:any)=>{
+  if(m.type==='GET_PUBLIC'){health=m.health;return {ok:true,data:{enabled:true,preferences:'builders and useful demos',revision:1}};}
+  calls++;return {ok:false,error:'Temporary provider error',retryAt:now+60000};
+ }},storage:{onChanged:{addListener:()=>{}}}};
+ const settle=()=>new Promise(r=>setTimeout(r,400));
+ try{
+  w.eval(bundle.outputFiles[0].text);await settle();assert.equal(calls,1);
+  polls.forEach(fn=>fn());await settle();assert.equal(calls,1);assert.equal(health.retrying,1);
+  now+=61000;polls.forEach(fn=>fn());await settle();assert.equal(calls,2);
+  now+=61000;polls.forEach(fn=>fn());await settle();assert.equal(calls,2,'one bounded retry, no paid request loop');assert.equal(health.errors,1);assert.equal(health.retrying,0);
+ }finally{dom.window.close();}
+});

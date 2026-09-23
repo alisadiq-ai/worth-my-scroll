@@ -12,7 +12,7 @@ try{
  const key=process.env.AI_GATEWAY_API_KEY;if(!key)throw Error('Provide AI_GATEWAY_API_KEY');
  await page.getByLabel('Jev or Vercel Gateway API key').fill(key);assert.match(await page.locator('#detected').innerText(),/Vercel AI Gateway detected/);
  await page.locator('#consent').check();await page.getByRole('button',{name:'Connect & start scoring'}).click();
- await page.locator('#connectResult').filter({hasText:'Your LinkedIn feed is ready.'}).waitFor({timeout:25000});
+ await page.locator('#connectResult').filter({hasText:'Connection verified. Feed status is shown above.'}).waitFor({timeout:25000});
  const current=await call('GET_STATE');assert.equal(current.provider,'gateway');assert.equal(current.settings.enabled,true);assert.equal(current.remembered,false);assert.equal(await page.locator('#apiKey').inputValue(),'');
  await page.setViewportSize({width:400,height:620});await page.screenshot({path:'output/playwright/popup-connected.png',fullPage:true});
  await page.getByRole('button',{name:'Pause scoring'}).click();await page.getByRole('button',{name:'Resume scoring'}).waitFor();assert.equal((await call('GET_STATE')).settings.enabled,false);
