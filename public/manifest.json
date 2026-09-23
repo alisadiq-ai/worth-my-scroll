@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Worth My Scroll",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Find your signal. Personal relevance and slop scores on LinkedIn, powered by Jev.",
   "permissions": [
     "storage"

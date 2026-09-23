@@ -20,6 +20,11 @@ test('worker protects credentials, deduplicates requests, caches, budgets and pa
   await send({type:'SAVE_SETTINGS',settings:{...settings,preferences:'Gardening and outdoor projects'}});
   await send({type:'EVALUATE',post},feed);assert.equal(calls,2);
   const limited=await send({type:'EVALUATE',post:post+' A different post.'},feed);assert.match(limited.error,/Daily request limit/);assert.equal(calls,2);
+  const failedState=await send({type:'GET_STATE'});assert.match(failedState.data.feedError.message,/Daily request limit/);
+  const revisionBefore=(await send({type:'GET_PUBLIC'},feed)).data.revision;
+  await send({type:'TEST_KEY'});
+  const revisionAfter=(await send({type:'GET_PUBLIC',health:{version:'0.2.1',scored:2,pending:0,errors:0,detected:5}},feed)).data.revision;
+  assert.ok(revisionAfter>revisionBefore);const healthy=await send({type:'GET_STATE'});assert.equal(healthy.data.feedError,undefined);assert.equal(healthy.data.feedHealth.scored,2);assert.equal(healthy.data.feedHealth.version,'0.2.1');
   await send({type:'SAVE_SETTINGS',settings:{...settings,enabled:false}});assert.equal((await send({type:'EVALUATE',post},feed)).ok,false);
   assert.equal((await send({type:'REMOVE_KEY'})).ok,true);assert.equal(session.gatewayKey,undefined);
  }finally{globalThis.fetch=oldFetch;}

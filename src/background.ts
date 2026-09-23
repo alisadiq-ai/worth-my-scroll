@@ -10,6 +10,8 @@ function exclusive<T>(fn:()=>Promise<T>):Promise<T>{const next=lock.then(fn);loc
 async function settings():Promise<Settings>{return {...DEFAULT_SETTINGS,...(await chrome.storage.local.get<{settings?:Settings}>('settings')).settings};}
 async function getKey():Promise<string|undefined>{const s=await chrome.storage.session.get<{gatewayKey?:string}>('gatewayKey');if(s.gatewayKey)return s.gatewayKey;return (await chrome.storage.local.get<{gatewayKey?:string}>('gatewayKey')).gatewayKey;}
 async function provider():Promise<Provider|undefined>{const key=await getKey();if(!key)return;const {keyProvider}=await chrome.storage.local.get<{keyProvider?:Provider}>('keyProvider');return resolveProvider(key,keyProvider);}
+async function revision(){return (await chrome.storage.local.get('scoringRevision')).scoringRevision||0;}
+async function restartScoring(){await chrome.storage.local.set({scoringRevision:Date.now()});await chrome.storage.session.remove('feedError');}
 async function usage():Promise<Usage>{return (await chrome.storage.local.get<{usage?:Usage}>('usage')).usage||freshUsage();}
 async function pricing():Promise<Pricing>{if(await provider()==='typesafe')return BASE_PRICING;return (await chrome.storage.local.get<{pricing?:Pricing}>('pricing')).pricing||BASE_PRICING;}
 async function refreshPricing(){if(await provider()==='typesafe')return;try{const r=await fetch('https://ai-gateway.vercel.sh/v1/models',{signal:AbortSignal.timeout(7000),redirect:'error'});if(!r.ok)return;const model=(await r.json()).data?.find((m:any)=>m.id===MODEL);const input=Number(model?.pricing?.input),output=Number(model?.pricing?.output);if(Number.isFinite(input)&&Number.isFinite(output)&&input>=0&&output>=0)await chrome.storage.local.set({pricing:{input,output,checkedAt:Date.now(),source:'catalog'}});}catch{/* keep dated snapshot */}}
@@ -56,8 +58,12 @@ async function handle(message:any,sender:chrome.runtime.MessageSender){
  }
  let linkedIn=false;try{const u=new URL(sender.url||'');linkedIn=u.origin==='https://www.linkedin.com'&&u.pathname.startsWith('/feed');}catch{}
  if(!extensionPage&&(!linkedIn||!publicTypes.has(message?.type)))throw new Error('Request not allowed.');
- if(message?.type==='GET_PUBLIC'){const s=await settings();return {enabled:s.enabled&&s.consent&&!!await getKey(),preferences:s.preferences};}
- if(message?.type==='EVALUATE')return score(message.post);
+ if(message?.type==='GET_PUBLIC'){
+  if(linkedIn&&message.health){const h=message.health;const count=(n:unknown)=>typeof n==='number'&&Number.isInteger(n)&&n>=0?Math.min(n,10000):0;await chrome.storage.session.set({feedHealth:{at:Date.now(),version:typeof h.version==='string'?h.version.slice(0,20):'',scored:count(h.scored),pending:count(h.pending),errors:count(h.errors),detected:count(h.detected)}});}
+  const s=await settings();return {enabled:s.enabled&&s.consent&&!!await getKey(),preferences:s.preferences,revision:await revision()};
+ }
+
+ if(message?.type==='EVALUATE'){try{return await score(message.post);}catch(e){await chrome.storage.session.set({feedError:{at:Date.now(),message:e instanceof Error?e.message:'Scoring failed.'}});throw e;}}
  if(message?.type==='OPEN_STASH'){
   const url=canonicalPostUrl(message.url||'');if(!url)throw new Error('A public LinkedIn post link is required.');
   if(typeof message.note!=='string'||message.note.length>1000)throw new Error('Invalid recreation brief.');
@@ -67,7 +73,7 @@ async function handle(message:any,sender:chrome.runtime.MessageSender){
  }
  if(!extensionPage&&!own)throw new Error('Open the extension to change settings.');
  switch(message?.type){
-  case 'GET_STATE':return {provider:await provider(),settings:await settings(),hasKey:!!await getKey(),remembered:!!(await chrome.storage.local.get('gatewayKey')).gatewayKey,usage:await usage(),pricing:await pricing()};
+  case 'GET_STATE':return {feedHealth:(await chrome.storage.session.get('feedHealth')).feedHealth,feedError:(await chrome.storage.session.get('feedError')).feedError,provider:await provider(),settings:await settings(),hasKey:!!await getKey(),remembered:!!(await chrome.storage.local.get('gatewayKey')).gatewayKey,usage:await usage(),pricing:await pricing()};
   case 'SAVE_SETTINGS':{
    const input=message.settings;
    if(typeof input?.preferences!=='string'||input.preferences.trim().length<10||input.preferences.length>3000)throw new Error('Write 10–3,000 characters of preferences.');
@@ -81,10 +87,10 @@ async function handle(message:any,sender:chrome.runtime.MessageSender){
    const selected=resolveProvider(message.key,message.provider);
    await chrome.storage.local.remove('gatewayKey');await chrome.storage.session.remove('gatewayKey');
    await chrome.storage.local.set({keyProvider:selected});
-   await (message.remember?chrome.storage.local:chrome.storage.session).set({gatewayKey:message.key.trim()});blockedUntil=0;void refreshPricing();return {saved:true,provider:selected};
+   await (message.remember?chrome.storage.local:chrome.storage.session).set({gatewayKey:message.key.trim()});blockedUntil=0;await restartScoring();void refreshPricing();return {saved:true,provider:selected};
   }
   case 'REMOVE_KEY':await chrome.storage.local.remove('gatewayKey');await chrome.storage.session.remove('gatewayKey');await chrome.storage.local.set({settings:{...await settings(),enabled:false}});return {removed:true};
-  case 'TEST_KEY':{const key=await getKey();if(!key)throw new Error('Add a Jev or Gateway key first.');const v=await evaluate('We shipped an AI invoice search feature. Combining exact invoice-number matching with embeddings improved our 80-query test from 61 to 74 correct results.',DEFAULT_SETTINGS.preferences,key,await provider());blockedUntil=0;return v;}
+  case 'TEST_KEY':{const key=await getKey();if(!key)throw new Error('Add a Jev or Gateway key first.');const v=await evaluate('We shipped an AI invoice search feature. Combining exact invoice-number matching with embeddings improved our 80-query test from 61 to 74 correct results.',DEFAULT_SETTINGS.preferences,key,await provider());blockedUntil=0;await restartScoring();return v;}
   case 'CLEAR_CACHE':await exclusive(()=>chrome.storage.local.remove('cache'));return {cleared:true};
   case 'REFRESH_PRICE':await refreshPricing();return pricing();
   default:throw new Error('Unsupported action.');

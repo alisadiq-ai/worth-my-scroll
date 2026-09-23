@@ -27,7 +27,7 @@ npm test
 npm run build
 ```
 
-Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select this project's `dist` directory. Click the extension icon. Paste your **TypeSafe/Jev or Vercel AI Gateway key**, edit your interests, accept the data notice, and click **Connect & start scoring**. Connection testing and activation happen in the same popup. No separate settings page or OpenAI key is needed. Refresh LinkedIn's home feed after installing or reloading the extension.
+Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select this project's `dist` directory. Click the extension icon. Paste your **TypeSafe/Jev or Vercel AI Gateway key**, edit your interests, accept the data notice, and click **Connect & start scoring**. Connection testing and activation happen in the same popup. No separate settings page or OpenAI key is needed. After updating local files, click Reload on the extension at `chrome://extensions`, then refresh LinkedIn. Updating the popup alone does not replace Chrome’s cached feed script. The popup reports whether the feed is connected; after fixing a connection problem, **Test & start scoring** lets failed posts retry.
 
 The key may be session-only (default) or remembered locally if you choose. It is never bundled in the extension. The public extension cannot access the developer's shared MCP secret store.
 
