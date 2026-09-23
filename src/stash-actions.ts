@@ -1,5 +1,6 @@
+import {resolvePostUrl} from './post-link';
 import type {Verdict} from './core';
-import {canonicalPostUrl,extractPostUrl,recreationNote,STASH_URL} from './favstash';
+import {canonicalPostUrl,recreationNote,STASH_URL} from './favstash';
 
 export function showPanel(panel:HTMLElement,anchor:HTMLElement){
  if(panel.matches(':popover-open')){panel.hidePopover();return;}
@@ -32,12 +33,17 @@ export function stashActions(root:ShadowRoot,post:HTMLElement,verdict:Verdict){
   finally{save.disabled=false;}
  }
  const heading=document.createElement('b');heading.className='headline';heading.textContent='Save this post';
- const help=document.createElement('p');help.textContent='LinkedIn hasn’t exposed this post’s link. Open its ⋯ menu, choose “Copy link to post”, and paste it here.';
+ const help=document.createElement('p');help.textContent='The automatic link lookup didn’t finish. You can retry Save to Stash, or paste the link from the post’s ⋯ menu → Copy link to post.';
  const label=document.createElement('label');label.textContent='Post link';const input=document.createElement('input');input.type='url';input.placeholder='https://www.linkedin.com/posts/…';label.append(input);
  const go=document.createElement('button');go.className='save-stash';go.textContent='Continue to FavStash ↗';go.onclick=()=>{const url=canonicalPostUrl(input.value);if(!url){input.setCustomValidity('Paste a public LinkedIn post link.');input.reportValidity();return;}input.setCustomValidity('');void open(url);};input.oninput=()=>input.setCustomValidity('');
  const cancel=document.createElement('button');cancel.className='dismiss';cancel.textContent='Cancel';cancel.onclick=()=>linkPanel.hidePopover();
  linkPanel.append(heading,help,label,go,cancel,notice);root.append(linkPanel);
  if(post.dataset.index!==undefined){save.disabled=true;save.title='Sample posts have no real LinkedIn link. Try this on your feed.';}
- save.onclick=()=>{const source=extractPostUrl(post);if(source){void open(source);return;}showPanel(linkPanel,save);input.focus({preventScroll:true});};
+ save.onclick=async()=>{
+  save.disabled=true;save.textContent='Getting link…';
+  try{const source=await resolvePostUrl(post);if(source){await open(source);return;}save.textContent='Save to Stash';showPanel(linkPanel,save);input.focus({preventScroll:true});}
+  catch(e){save.textContent='Save to Stash';notice.textContent=(e as Error).message;if(!linkPanel.matches(':popover-open'))showPanel(linkPanel,save);}
+  finally{save.disabled=false;}
+ };
  return group;
 }

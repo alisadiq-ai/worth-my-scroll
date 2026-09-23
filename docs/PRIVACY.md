@@ -16,7 +16,7 @@ Test connection sends a fixed synthetic example. No OpenAI model, profile infere
 
 ## FavStash
 
-Only an explicit Save in FavStash click creates a handoff. The source URL and short numeric/creative note are kept in extension session storage for up to an hour and supplied to a companion content script on the FavStash stash page. The handoff identifier is placed in a URL fragment. It does not contain your API key. You review the existing FavStash form, select a collection, and click Save item. FavStash's own policies and account limits then apply.
+Only an explicit Save to Stash click creates a handoff. When the source URL is absent from rendered markup, the extension invokes the selected post’s Copy link action. A helper running in the LinkedIn page context temporarily observes the URL being written (up to four seconds); it does not read pre-existing clipboard content. The native clipboard behavior is retained and restored after this action. Only a validated LinkedIn post URL is passed back to the extension. The source URL and short numeric/creative note are kept in extension session storage for up to an hour and supplied to a companion content script on the FavStash stash page. The handoff identifier is placed in a URL fragment. It does not contain your API key. You review the existing FavStash form, select a collection, and click Save item. FavStash's own policies and account limits then apply.
 
 Copy agent brief writes the selected source excerpt, source link if available, scores, and a drafting request to your clipboard. Nothing is automatically sent to an agent or published. Clear the clipboard if that content is sensitive.
 

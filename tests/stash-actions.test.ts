@@ -14,6 +14,6 @@ test('red-rated posts expose toolbar save and send the exact source to the exist
   root.querySelector('.save-stash').click();await new Promise(r=>setTimeout(r,0));
   assert.equal(messages.length,1);assert.equal(messages[0].type,'OPEN_STASH');assert.equal(messages[0].url,'https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/');assert.match(messages[0].note,/Recreate potential: 10/);assert.equal(root.querySelector('.save-stash').textContent,'Opened ↗');
   root.querySelector('.stash-info').click();assert.ok(root.querySelector('.stash-info-panel').hasAttribute('data-open'));assert.match(root.querySelector('.stash-info-panel').textContent,/MCP/);
-  article.removeAttribute('data-urn');root.querySelector('.save-stash').click();assert.ok(root.querySelector('.stash-link-panel').hasAttribute('data-open'));assert.equal(messages.length,1,'a missing source must never be guessed or sent');
+  article.removeAttribute('data-urn');root.querySelector('.save-stash').click();w.dispatchEvent(new w.MessageEvent('message',{source:w,origin:w.location.origin,data:{type:'wms:post-link-result',id:article.dataset.wmsLinkRequest,url:null}}));await new Promise(r=>setTimeout(r,0));assert.ok(root.querySelector('.stash-link-panel').hasAttribute('data-open'));assert.equal(messages.length,1,'a missing source must never be guessed or sent');
  }finally{dom.window.close();}
 });

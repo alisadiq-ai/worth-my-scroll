@@ -2,7 +2,7 @@
 
 ## Verified
 
-- TypeScript check and 18 Node tests passed. Tests cover provider routing, schema translation, invalid output rejection, credential isolation, cache deduplication, budgets, pause, URL validation, and extraction.
+- TypeScript check and 20 Node tests passed. Tests cover provider routing, schema translation, invalid output rejection, credential isolation, cache deduplication, budgets, pause, URL validation, and extraction.
 - Live **Vercel Gateway** synthetic requests returned all six requested judgments. Four-case smoke sample: useful builder post green; hollow bait red; useful gardening post amber for builder preferences and green for gardener preferences. This is a behavior smoke check, not an accuracy benchmark.
 - In an isolated Chrome for Testing installation, the popup detected both known key prefixes and exposed a selector for unknown formats. A real Gateway key completed connect/test/enable in one action. Session-only storage, clearing the key field, pause and resume were verified.
 - Twelve browser checks passed: three live ratings, recreate chip, radar popover, repeat cache hit, narrow viewport, installed content-script scoring, sponsored-post exclusion, FavStash handoff creation, URL/note prefill, collection remaining a user choice, and pause removing ratings.
@@ -43,3 +43,7 @@ A newer popup can coexist with an older Chrome-cached content script until the e
 ## Toolbar stash action (0.2.2)
 
 Save to Stash and an accessible info popover are available beside Why on every rated post, including red ratings. The same existing FavStash form handoff is used; the UI says Opened, not Saved. Unit regression verified the source URL and recreation note, missing-URL fallback, and low-score availability. The new toolbar and info popover were visually inspected in Chrome on synthetic posts. No real FavStash item was saved during this check.
+
+## Native post-link resolution (0.2.4)
+
+A bounded MAIN-world helper invokes the selected post’s native control menu and Copy link action, then returns only a validated LinkedIn permalink. The clipboard read permission is not requested. Automated tests cover capture of a freshly generated URL, original clipboard function restoration, existing handoff routing, and excluding links quoted within post text. Live acceptance of this new native menu path is pending an extension reload.
