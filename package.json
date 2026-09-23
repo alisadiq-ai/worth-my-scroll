@@ -10,7 +10,9 @@
     "test": "tsx --test tests/*.test.ts",
     "preview": "node scripts/serve.mjs",
     "package": "npm run build && cd dist && zip -qr ../worth-my-scroll.zip .",
-    "smoke": "node scripts/live-smoke.mjs"
+    "smoke": "node scripts/live-smoke.mjs",
+    "site:build": "node scripts/build-site.mjs",
+    "site:preview": "node scripts/serve-site.mjs"
   },
   "devDependencies": {
     "@types/chrome": "^0.1.24",

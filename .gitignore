@@ -8,3 +8,6 @@ output/
 .DS_Store
 .playwright-cli/
 .browser-profile/
+site-dist/
+.vercel/
+.vercel

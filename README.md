@@ -6,7 +6,7 @@ Worth My Scroll is a Chrome extension that scores LinkedIn posts against **your 
 
 ![Worth My Scroll: green for relevant ideas, amber for mixed signal, red for filler. Illustrative ratings.](docs/assets/feed-preview.svg)
 
-[Get started](#get-started) · [Save ideas to FavStash](#turn-a-good-post-into-your-next-idea) · [Privacy](docs/PRIVACY.md) · [MIT license](LICENSE)
+[Website](https://worth-my-scroll.vercel.app) · [Get started](#get-started) · [Save ideas to FavStash](#turn-a-good-post-into-your-next-idea) · [Privacy](docs/PRIVACY.md) · [MIT license](LICENSE)
 
 ## See it in action
 
