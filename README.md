@@ -101,6 +101,22 @@ Read the [full privacy details](docs/PRIVACY.md).
 
 ## Frequently asked questions
 
+### Do you store my Jev or Vercel API key?
+
+No. You bring an API key issued under **your own TypeSafe/Jev or Vercel account**, and provider usage is billed to that account. The extension stores its copy in **your Chrome profile**, not in a Worth My Scroll account, FavStash account, or Chrome Sync. It is an API key; you do not need to supply a LinkedIn login token or JWT.
+
+By default, the key stays in Chrome extension session memory and clears when the browser restarts or the extension is reloaded, disabled, or updated. **Remember key on this device** optionally persists it in local extension storage. That saved copy is **not encrypted by the extension** and is not a password vault. Leave Remember off for less persistent exposure, use a dedicated provider key, and configure provider spending limits where available.
+
+### Who receives the key and the posts I score?
+
+The extension’s background worker sends requests directly over HTTPS to your selected provider: TypeSafe for direct Jev, or Vercel AI Gateway for Jev through the Gateway. Your key is sent in the authorization header to that provider. Worth My Scroll and FavStash do not receive it. The key is not inserted into LinkedIn’s page, and the feed content script cannot retrieve it through the extension’s storage or message API.
+
+After you enable scoring and accept the data notice, visible post text and your preferences leave your browser for provider processing. Provider retention and logging policies apply. This is not offline AI. There is no extension-operated backend, analytics, or telemetry. **Save to Stash** separately sends the selected post link and inspiration note to FavStash when you click it, never the provider key.
+
+### Is a browser-stored API key completely safe?
+
+No storage option makes a compromised device safe. The current implementation limits access to trusted extension contexts, restricts provider destinations, and uses HTTPS, but a stolen browser profile, malware, or a malicious extension update can still put credentials at risk. Optional remembered keys have no application-level encryption. Removing a key here clears the extension’s copy; revoke it with the provider to invalidate it. The open-source implementation is available for inspection; this is not a claim of an independent security audit.
+
 ### Does this detect whether a post was written by AI?
 
 No. The slop rating looks for low-value filler, hype, and withheld payoff. AI-assisted writing can be useful; human writing can be empty. Scores are subjective judgments against your preferences, not proof of authorship or fact-checking.
