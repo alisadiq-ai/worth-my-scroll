@@ -1,6 +1,6 @@
 {
   "name": "worth-my-scroll",
-  "version": "0.2.4",
+  "version": "0.2.5",
   "private": true,
   "type": "module",
   "description": "A little more signal in your LinkedIn scroll. Powered by Jev.",

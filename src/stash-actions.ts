@@ -34,8 +34,8 @@ export function stashActions(root:ShadowRoot,post:HTMLElement,verdict:Verdict){
  }
  const heading=document.createElement('b');heading.className='headline';heading.textContent='Save this post';
  const help=document.createElement('p');help.textContent='The automatic link lookup didn’t finish. You can retry Save to Stash, or paste the link from the post’s ⋯ menu → Copy link to post.';
- const label=document.createElement('label');label.textContent='Post link';const input=document.createElement('input');input.type='url';input.placeholder='https://www.linkedin.com/posts/…';label.append(input);
- const go=document.createElement('button');go.className='save-stash';go.textContent='Continue to FavStash ↗';go.onclick=()=>{const url=canonicalPostUrl(input.value);if(!url){input.setCustomValidity('Paste a public LinkedIn post link.');input.reportValidity();return;}input.setCustomValidity('');void open(url);};input.oninput=()=>input.setCustomValidity('');
+ const label=document.createElement('label');label.textContent='Post link';const input=document.createElement('input');input.type='url';input.placeholder='linkedin.com/posts/… or lnkd.in/p/…';label.append(input);
+ const go=document.createElement('button');go.className='save-stash';go.textContent='Continue to FavStash ↗';go.onclick=()=>{const url=canonicalPostUrl(input.value);if(!url){input.setCustomValidity('Paste a LinkedIn post link (linkedin.com or lnkd.in/p/…).');input.reportValidity();return;}input.setCustomValidity('');void open(url);};input.oninput=()=>input.setCustomValidity('');
  const cancel=document.createElement('button');cancel.className='dismiss';cancel.textContent='Cancel';cancel.onclick=()=>linkPanel.hidePopover();
  linkPanel.append(heading,help,label,go,cancel,notice);root.append(linkPanel);
  if(post.dataset.index!==undefined){save.disabled=true;save.title='Sample posts have no real LinkedIn link. Try this on your feed.';}

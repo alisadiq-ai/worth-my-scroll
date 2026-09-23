@@ -38,16 +38,22 @@ window.addEventListener('message',event=>{
  if(!control){reply(null);return;}
  active=true;let done=false;let capture:()=>void=()=>{};
  const finish=(url:string|null)=>{if(done)return;done=true;clearTimeout(timeout);observer.disconnect();capture();active=false;reply(url);};
+ const existingLinks=new Map([...document.querySelectorAll<HTMLAnchorElement>('a[href]')].map(a=>[a,a.href]));
  const copyLabel=/^(Copy link to post|Copy link|Link zum Beitrag kopieren|Link kopieren)$/i;
  let clicked=false;
  const inspect=()=>{
-  if(clicked||done)return;
+  if(done)return;
+  if(clicked){
+   const links=[...document.querySelectorAll<HTMLAnchorElement>('a[href]')].filter(a=>visible(a)&&/^(View post|Beitrag ansehen)\.?$/i.test(a.textContent?.trim()||'')&&existingLinks.get(a)!==a.href);
+   for(const link of links){const url=canonicalPostUrl(link.href);if(url){finish(url);break;}}
+   return;
+  }
   const items=[...document.querySelectorAll<HTMLElement>('[role="menuitem"]')].filter(el=>visible(el)&&copyLabel.test(el.textContent?.trim()||''));
   if(items.length!==1)return;
-  clicked=true;observer.disconnect();capture=captureCopiedLink(url=>finish(url));items[0].click();
+  clicked=true;capture=captureCopiedLink(url=>finish(url));items[0].click();
  };
  const observer=new MutationObserver(inspect);
  const timeout=setTimeout(()=>{if(!clicked&&control.getAttribute('aria-expanded')==='true')control.click();finish(null);},4000);
- observer.observe(document.body,{childList:true,subtree:true});
+ observer.observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:['href']});
  control.click();inspect();
 });

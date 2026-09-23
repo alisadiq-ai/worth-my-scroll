@@ -2,7 +2,7 @@
 
 ## Verified
 
-- TypeScript check and 20 Node tests passed. Tests cover provider routing, schema translation, invalid output rejection, credential isolation, cache deduplication, budgets, pause, URL validation, and extraction.
+- TypeScript check and 23 Node tests passed. Tests cover provider routing, schema translation, invalid output rejection, credential isolation, cache deduplication, budgets, pause, URL validation, and extraction.
 - Live **Vercel Gateway** synthetic requests returned all six requested judgments. Four-case smoke sample: useful builder post green; hollow bait red; useful gardening post amber for builder preferences and green for gardener preferences. This is a behavior smoke check, not an accuracy benchmark.
 - In an isolated Chrome for Testing installation, the popup detected both known key prefixes and exposed a selector for unknown formats. A real Gateway key completed connect/test/enable in one action. Session-only storage, clearing the key field, pause and resume were verified.
 - Twelve browser checks passed: three live ratings, recreate chip, radar popover, repeat cache hit, narrow viewport, installed content-script scoring, sponsored-post exclusion, FavStash handoff creation, URL/note prefill, collection remaining a user choice, and pause removing ratings.
@@ -47,3 +47,7 @@ Save to Stash and an accessible info popover are available beside Why on every r
 ## Native post-link resolution (0.2.4)
 
 A bounded MAIN-world helper invokes the selected post’s native control menu and Copy link action, then returns only a validated LinkedIn permalink. The clipboard read permission is not requested. Automated tests cover capture of a freshly generated URL, original clipboard function restoration, existing handoff routing, and excluding links quoted within post text. Live acceptance of this new native menu path is pending an extension reload.
+
+## Short post links (0.2.5)
+
+Live LinkedIn copying revealed a native `https://lnkd.in/p/<id>` URL, which the previous validator rejected. The validator now accepts that bounded path, strips tracking, and unwraps LinkedIn safety links only when their destination is a supported post URL. A fresh View post toast is a second capture path. Tests cover full URLs, short URLs, toast-only delivery, spoofed destinations, and the short-link worker handoff. FavStash’s current backend allowlist was checked read-only and recognizes lnkd.in as LinkedIn. Live automatic handoff acceptance awaits the updated extension reload.

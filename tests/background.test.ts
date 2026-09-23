@@ -1,8 +1,8 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
 test('worker protects credentials, deduplicates requests, caches, budgets and pauses',async()=>{
- const local:Record<string,any>={},session:Record<string,any>={};let listener:any;const accesses:string[]=[];
+ const local:Record<string,any>={},session:Record<string,any>={};let listener:any;const accesses:string[]=[];const opened:string[]=[];
  function area(data:Record<string,any>){return {get:async(key:string)=>({[key]:data[key]}),set:async(v:any)=>Object.assign(data,structuredClone(v)),remove:async(key:string)=>{delete data[key];},setAccessLevel:async(v:any)=>{accesses.push(v.accessLevel);}};}
- (globalThis as any).chrome={storage:{local:area(local),session:area(session)},runtime:{id:'test',getURL:(p:string)=>`chrome-extension://test/${p}`,onMessage:{addListener:(fn:any)=>listener=fn},onInstalled:{addListener:()=>{}}}};
+ (globalThis as any).chrome={tabs:{create:async({url}:{url:string})=>{opened.push(url);}},storage:{local:area(local),session:area(session)},runtime:{id:'test',getURL:(p:string)=>`chrome-extension://test/${p}`,onMessage:{addListener:(fn:any)=>listener=fn},onInstalled:{addListener:()=>{}}}};
  let calls=0;const oldFetch=globalThis.fetch;
  globalThis.fetch=async(url)=>{if(String(url).endsWith('/models'))return Response.json({data:[]});calls++;await new Promise(r=>setTimeout(r,10));return Response.json({answers:{fit:{type:'score',score:4},substance:{type:'score',score:4},value:{type:'score',score:4},slop:{type:'score',score:0},recreate:{type:'score',score:4},bait:{type:'boolean',probability:0}},usage:{inputTokens:1000,outputTokens:160}});};
  try{
@@ -26,6 +26,7 @@ test('worker protects credentials, deduplicates requests, caches, budgets and pa
   const revisionAfter=(await send({type:'GET_PUBLIC',health:{version:'0.2.1',scored:2,pending:0,errors:0,detected:5}},feed)).data.revision;
   assert.ok(revisionAfter>revisionBefore);const healthy=await send({type:'GET_STATE'});assert.equal(healthy.data.feedError,undefined);assert.equal(healthy.data.feedHealth.scored,2);assert.equal(healthy.data.feedHealth.version,'0.2.1');
   await send({type:'SAVE_SETTINGS',settings:{...settings,enabled:false}});assert.equal((await send({type:'EVALUATE',post},feed)).ok,false);
+  const handoff=await send({type:'OPEN_STASH',url:'https://lnkd.in/p/dwbZVKeC',note:'Recreate potential: 70/100'},feed);assert.equal(handoff.ok,true);assert.equal(opened.length,1);assert.match(opened[0],/^https:\/\/www\.favstash\.app\/dashboard\/stash#wms=/);assert.equal(Object.values(session.handoffs as Record<string,any>)[0].url,'https://lnkd.in/p/dwbZVKeC');
   assert.equal((await send({type:'REMOVE_KEY'})).ok,true);assert.equal(session.gatewayKey,undefined);
  }finally{globalThis.fetch=oldFetch;}
 });

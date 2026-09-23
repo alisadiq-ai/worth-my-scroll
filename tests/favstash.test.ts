@@ -4,3 +4,10 @@ test('extracts source only from actual post links and modern sponsored labels ar
 test('agent handoff asks for original evidence and approval before scheduling',()=>{const v={...summarize({fit:90,substance:90,value:80,slop:1,bait:0,recreate:85}),ms:10,inputTokens:100,outputTokens:20};const text=agentBrief('Source material',v);assert.match(text,/Do not schedule or publish until I approve/);assert.match(text,/not a virality prediction/);assert.match(text,/untrusted reference material/);});
 
 test('links mentioned in post text are not mistaken for the source post',()=>{const d=new JSDOM('<article><p data-testid="expandable-text-box"><a href="https://www.linkedin.com/posts/some-other-post-1234567890">Reference post</a></p></article>').window.document;assert.equal(extractPostUrl(d.querySelector('article')!),null);});
+
+test('accepts native LinkedIn short post links and unwraps only supported safety links',()=>{
+ assert.equal(canonicalPostUrl('https://lnkd.in/p/dwbZVKeC'),'https://lnkd.in/p/dwbZVKeC');
+ assert.equal(canonicalPostUrl('https://lnkd.in/p/dwbZVKeC/?trk=x'),'https://lnkd.in/p/dwbZVKeC');
+ assert.equal(canonicalPostUrl('https://www.linkedin.com/safety/go/?url='+encodeURIComponent('https://lnkd.in/p/dwbZVKeC')+'&urlhash=test'),'https://lnkd.in/p/dwbZVKeC');
+ for(const url of ['https://lnkd.in/not-a-post','https://lnkd.in.evil.test/p/dwbZVKeC','https://user:pass@lnkd.in/p/dwbZVKeC','https://www.linkedin.com/safety/go/?url=https://evil.test/p/dwbZVKeC'])assert.equal(canonicalPostUrl(url),null);
+});

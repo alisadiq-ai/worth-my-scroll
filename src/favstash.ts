@@ -1,9 +1,18 @@
 import type {Verdict} from './core';
 export const STASH_URL='https://www.favstash.app/dashboard/stash';
 export function canonicalPostUrl(value:string):string|null{
- try{const u=new URL(value);if(u.protocol!=='https:'||!['www.linkedin.com','linkedin.com'].includes(u.hostname))return null;
- const activity=u.pathname.match(/urn:li:activity:(\d{10,25})/);if(activity)return `https://www.linkedin.com/feed/update/urn:li:activity:${activity[1]}/`;
- if(u.pathname.startsWith('/posts/')&&u.pathname.length>15){u.search='';u.hash='';return u.toString();}return null;
+ try{
+  let u=new URL(value.trim());
+  if(u.protocol!=='https:'||u.username||u.password||u.port)return null;
+  // The native toast wraps its short post URL in LinkedIn's safety redirect.
+  if(['www.linkedin.com','linkedin.com'].includes(u.hostname)&&u.pathname==='/safety/go/'){
+   u=new URL(u.searchParams.get('url')||'');
+   if(u.protocol!=='https:'||u.username||u.password||u.port)return null;
+  }
+  if(u.hostname==='lnkd.in'&&/^\/p\/[a-zA-Z0-9_-]{5,64}\/?$/.test(u.pathname))return `https://lnkd.in${u.pathname.replace(/\/$/,'')}`;
+  if(!['www.linkedin.com','linkedin.com'].includes(u.hostname))return null;
+  const activity=u.pathname.match(/^\/feed\/update\/urn:li:activity:(\d{10,25})\/?$/);if(activity)return `https://www.linkedin.com/feed/update/urn:li:activity:${activity[1]}/`;
+  if(u.pathname.startsWith('/posts/')&&u.pathname.length>15){u.search='';u.hash='';return u.toString();}return null;
  }catch{return null;}
 }
 export function extractPostUrl(post:Element):string|null{
