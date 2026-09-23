@@ -15,6 +15,15 @@ export function canonicalPostUrl(value:string):string|null{
   if(u.pathname.startsWith('/posts/')&&u.pathname.length>15){u.search='';u.hash='';return u.toString();}return null;
  }catch{return null;}
 }
+/** FavStash owns authentication, form prefill, collection selection, and saving. */
+export function stashSaveUrl(value:unknown,note:unknown):string{
+ const url=typeof value==='string'?canonicalPostUrl(value):null;
+ if(!url||url.length>2048)throw new Error('A public LinkedIn post link is required.');
+ if(typeof note!=='string'||note.length>1000)throw new Error('Invalid recreation brief.');
+ const target=new URL(STASH_URL);target.searchParams.set('url',url);
+ if(note)target.searchParams.set('note',note);
+ return target.toString();
+}
 export function extractPostUrl(post:Element):string|null{
  for(const attr of ['data-urn','data-id','componentkey']){const value=post.getAttribute(attr)||'';const id=value.match(/urn:li:activity:(\d{10,25})/);if(id)return `https://www.linkedin.com/feed/update/urn:li:activity:${id[1]}/`;}
  for(const link of post.querySelectorAll<HTMLAnchorElement>('a[href]')){if(link.closest('[data-testid="expandable-text-box"],.update-components-text,.feed-shared-update-v2__description,.feed-shared-text'))continue;const owner=link.closest('[role="listitem"][componentkey^="update-card"],.feed-shared-update-v2[data-urn],[data-id^="urn:li:activity:"]');if(owner&&owner!==post)continue;const url=canonicalPostUrl(link.href);if(url)return url;}return null;

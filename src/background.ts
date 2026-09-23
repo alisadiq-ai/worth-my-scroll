@@ -1,6 +1,6 @@
 import {resolveProvider,type Provider} from './provider';
 import {BASE_PRICING,DEFAULT_SETTINGS,MODEL,cacheKey,evaluate,type Settings,type Verdict,type Pricing} from './core';
-import {canonicalPostUrl,STASH_URL} from './favstash';
+import {stashSaveUrl} from './favstash';
 type Usage={day:string;attempts:number;count:number;input:number;output:number;ms:number;estimatedSpend:number};
 type Cache=Record<string,{at:number;verdict:Verdict}>;
 const ready=Promise.all([chrome.storage.local.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'}),chrome.storage.session.setAccessLevel({accessLevel:'TRUSTED_CONTEXTS'})]);
@@ -50,12 +50,6 @@ async function handle(message:any,sender:chrome.runtime.MessageSender){
  if(sender.id!==chrome.runtime.id)throw new Error('Unknown extension sender.');
  const own=sender.url?.startsWith(chrome.runtime.getURL(''))&&!sender.tab;
  const extensionPage=sender.url?.startsWith(chrome.runtime.getURL(''));
- if(message?.type==='GET_HANDOFF'){
-  if(!sender.url?.startsWith(STASH_URL))throw new Error('Open FavStash to continue.');
-  const entry=(await chrome.storage.session.get<{handoffs?:Record<string,any>}>('handoffs')).handoffs?.[message.id];
-  if(!entry||Date.now()-entry.at>3600000)throw new Error('Handoff expired. Open it again from the post.');
-  return {url:entry.url,note:entry.note};
- }
  let linkedIn=false;try{const u=new URL(sender.url||'');linkedIn=u.origin==='https://www.linkedin.com'&&u.pathname.startsWith('/feed');}catch{}
  if(!extensionPage&&(!linkedIn||!publicTypes.has(message?.type)))throw new Error('Request not allowed.');
  if(message?.type==='GET_PUBLIC'){
@@ -65,11 +59,7 @@ async function handle(message:any,sender:chrome.runtime.MessageSender){
 
  if(message?.type==='EVALUATE'){try{return await score(message.post);}catch(e){await chrome.storage.session.set({feedError:{at:Date.now(),message:e instanceof Error?e.message:'Scoring failed.'}});throw e;}}
  if(message?.type==='OPEN_STASH'){
-  const url=canonicalPostUrl(message.url||'');if(!url)throw new Error('A public LinkedIn post link is required.');
-  if(typeof message.note!=='string'||message.note.length>1000)throw new Error('Invalid recreation brief.');
-  const id=crypto.randomUUID();
-  await exclusive(async()=>{const entries=(await chrome.storage.session.get<{handoffs?:Record<string,any>}>('handoffs')).handoffs||{};entries[id]={url,note:message.note,at:Date.now()};await chrome.storage.session.set({handoffs:Object.fromEntries(Object.entries(entries).filter(([,v])=>Date.now()-v.at<3600000).slice(-20))});});
-  await chrome.tabs.create({url:`${STASH_URL}#wms=${id}`});return {opened:true};
+  await chrome.tabs.create({url:stashSaveUrl(message.url,message.note)});return {opened:true};
  }
  if(!extensionPage&&!own)throw new Error('Open the extension to change settings.');
  switch(message?.type){

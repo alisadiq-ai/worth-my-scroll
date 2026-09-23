@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Worth My Scroll",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "Find your signal. Personal relevance and slop scores on LinkedIn, powered by Jev.",
   "permissions": [
     "storage"
@@ -41,15 +41,6 @@
       ],
       "js": [
         "content.js"
-      ],
-      "run_at": "document_idle"
-    },
-    {
-      "matches": [
-        "https://www.favstash.app/dashboard/stash*"
-      ],
-      "js": [
-        "favstash-handoff.js"
       ],
       "run_at": "document_idle"
     }

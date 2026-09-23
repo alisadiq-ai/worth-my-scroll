@@ -1,6 +1,6 @@
 // Run against an isolated Chrome-for-Testing session started with the extension.
 // Never attach this harness to a normal personal browser. No remote saves/posts.
-import {chromium} from 'playwright';import {readFile,writeFile,mkdir} from 'node:fs/promises';
+import {chromium} from 'playwright';import {writeFile,mkdir} from 'node:fs/promises';
 const browser=await chromium.connectOverCDP(process.env.WMS_TEST_CDP||'http://127.0.0.1:9333');
 const context=browser.contexts()[0];
 const worker=context.serviceWorkers().find(w=>w.url().endsWith('/background.js'));if(!worker)throw Error('No test extension worker');
@@ -29,7 +29,7 @@ try{
  '<article role="listitem" componentkey="update-card-test1" data-urn="urn:li:activity:1234567890123456789"><h2>Feed post</h2><span data-testid="expandable-text-box">We shipped semantic search in our invoicing app this week. Embeddings alone kept missing invoice numbers. So we added an exact-match path before the vector lookup. On our 80-query test set, correct retrieval went from 61 to 74 queries. The tradeoff? Two indexes to maintain. Small feature. A lot less searching.</span></article>'+
  '<article role="listitem" componentkey="update-card-ad"><h2>Feed post</h2><p><span>Promoted</span></p><span data-testid="expandable-text-box">A sponsored message about an AI tool. This must remain unscored.</span></article></main></body></html>';
  await context.route('https://www.linkedin.com/feed/wms-test/',route=>route.fulfill({status:200,contentType:'text/html',body:fixture}));
- const stashFixture=await readFile('tests/fixtures/favstash.html','utf8');
+ const stashFixture='<html><body><h1>FavStash destination placeholder</h1></body></html>';
  await context.route('https://www.favstash.app/dashboard/stash*',route=>route.fulfill({status:200,contentType:'text/html',body:stashFixture}));
  feed=await context.newPage();await feed.goto('https://www.linkedin.com/feed/wms-test/');
  await feed.locator('wms-rating').waitFor({timeout:30000});
@@ -37,19 +37,12 @@ try{
  check('modern sponsored post left untouched',await feed.locator('[componentkey="update-card-ad"] wms-rating').count()===0);
  await feed.screenshot({path:'output/playwright/content-script.png',fullPage:true});
  const popup=context.waitForEvent('page');await feed.getByRole('button',{name:'Save to Stash'}).click();stash=await popup;await stash.waitForLoadState();
- // Chrome-created tabs can begin before routing attaches. Validate the handoff,
- // then use a fresh controlled fixture tab to test the form helper.
- const handoffId=await page.evaluate(async()=>{const {handoffs}=await chrome.storage.session.get('handoffs');return Object.entries(handoffs).sort((a,b)=>b[1].at-a[1].at)[0][0];});
- check('FavStash handoff created',!!handoffId);await stash.close();stash=await context.newPage();
- await stash.route('**/*',route=>route.request().isNavigationRequest()?route.fulfill({status:200,contentType:'text/html',body:stashFixture}):route.abort());
- await stash.goto('https://www.favstash.app/dashboard/stash?fixture=1#wms='+handoffId,{waitUntil:'domcontentloaded'});
- await stash.getByRole('heading',{name:'FavStash form fixture'}).waitFor({timeout:5000});
- await stash.getByRole('button',{name:'Prepare save form'}).click();
- await stash.getByRole('button',{name:'Prepared ✓'}).waitFor({timeout:5000});
- check('FavStash public URL prefilled',await stash.locator('input[type="url"]').inputValue()==='https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/');
- check('recreation brief prefilled', (await stash.locator('textarea').inputValue()).includes('Recreate potential'));
- check('collection remains a user choice',await stash.getByLabel('Collection').inputValue()==='No collection');
- await stash.screenshot({path:'output/playwright/favstash-handoff.png',fullPage:true});
+ const target=new URL(stash.url());
+ check('FavStash native save route opened',target.origin==='https://www.favstash.app'&&target.pathname==='/dashboard/stash');
+ check('source link passed to FavStash',target.searchParams.get('url')==='https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/');
+ check('recreation brief passed to FavStash',target.searchParams.get('note')?.includes('Recreate potential'));
+ check('no extension handoff identifier',target.hash==='');
+ // Native form/auth behavior is tested by FavStash and separately on production.
  await call('SAVE_SETTINGS',{settings:{...original.settings,enabled:false}});
  await feed.locator('wms-rating').waitFor({state:'detached',timeout:10000});check('pause removes existing ratings',await feed.locator('.wms-rated').count()===0);
  const u=(await call('GET_STATE')).usage;report.usage={count:u.count,input:u.input,output:u.output,averageMs:Math.round(u.ms/u.count)};

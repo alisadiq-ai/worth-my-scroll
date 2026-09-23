@@ -51,3 +51,9 @@ A bounded MAIN-world helper invokes the selected post’s native control menu an
 ## Short post links (0.2.5)
 
 Live LinkedIn copying revealed a native `https://lnkd.in/p/<id>` URL, which the previous validator rejected. The validator now accepts that bounded path, strips tracking, and unwraps LinkedIn safety links only when their destination is a supported post URL. A fresh View post toast is a second capture path. Tests cover full URLs, short URLs, toast-only delivery, spoofed destinations, and the short-link worker handoff. FavStash’s current backend allowlist was checked read-only and recognizes lnkd.in as LinkedIn. Live automatic handoff acceptance awaits the updated extension reload.
+
+## Native FavStash save route (0.2.6)
+
+Save to Stash now opens FavStash's native `?url=…&note=…` route. Removed the FavStash content script, injected helper, temporary session handoff store, and old `#wms` protocol. The URL contract was checked against the FavStash implementation, including source/note length limits. All 24 unit tests, TypeScript checking, and the build passed. Regression coverage includes native short links, parameter encoding, invalid input rejection, and blocking the removed handoff message. README illustrations were visually checked in Chrome.
+
+The earlier form-helper browser checks above describe historical versions, not the current native flow. The isolated browser harness now checks only the outgoing URL contract. Production prefill and the user's installed-extension flow remain pending the FavStash Amplify release and a Chrome extension reload. A scheduled follow-up tracks the owning FavStash task.

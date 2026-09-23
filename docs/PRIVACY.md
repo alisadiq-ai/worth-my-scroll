@@ -1,4 +1,4 @@
-# Privacy — development preview
+# Privacy
 
 Worth My Scroll is a local Chrome extension. There is no extension-operated backend, analytics, or telemetry.
 
@@ -16,17 +16,16 @@ Test connection sends a fixed synthetic example. No OpenAI model, profile infere
 
 ## FavStash
 
-Only an explicit Save to Stash click creates a handoff. When the source URL is absent from rendered markup, the extension invokes the selected post’s Copy link action. A helper running in the LinkedIn page context temporarily observes the URL being written (up to four seconds); it does not read pre-existing clipboard content. The native clipboard behavior is retained and restored after this action. Only a validated LinkedIn post URL is passed back to the extension. The source URL and short numeric/creative note are kept in extension session storage for up to an hour and supplied to a companion content script on the FavStash stash page. The handoff identifier is placed in a URL fragment. It does not contain your API key. You review the existing FavStash form, select a collection, and click Save item. FavStash's own policies and account limits then apply.
+Only an explicit Save to Stash click creates a handoff. When the source URL is absent from rendered markup, the extension invokes the selected post’s Copy link action. A helper running in the LinkedIn page context temporarily observes the URL being written (up to four seconds); it does not read pre-existing clipboard content. The native clipboard behavior is retained and restored after this action. Only a validated LinkedIn post URL is passed back to the extension. The source URL and short numeric/creative note are sent as query parameters to FavStash’s native save route. They may appear in browser history and server request logs; they contain no API key or raw post excerpt. FavStash handles login/signup continuity and opening the prefilled form. The extension does not run a content script on FavStash or access its authentication. You select a collection and click Save item in FavStash. FavStash's own policies and account limits then apply.
 
 Copy agent brief writes the selected source excerpt, source link if available, scores, and a drafting request to your clipboard. Nothing is automatically sent to an agent or published. Clear the clipboard if that content is sensitive.
 
 ## Permissions
 
-- `storage`: settings, scoped credentials, cache, usage, and temporary handoffs.
+- `storage`: settings, scoped credentials, cache, and usage.
 - `https://ai-gateway.vercel.sh/*`: Gateway evaluation and model-pricing lookup.
 - `https://api.typesafe.ai/*`: direct Jev evaluation.
 - Bundled Sora font files are exposed only to LinkedIn so injected ratings can use the same typography without remote font requests.
 - Content script on `www.linkedin.com/feed/*`: read visible post text and insert ratings.
-- Content script on `www.favstash.app/dashboard/stash*`: prepare the existing save form only when an explicit handoff identifier is present.
 
 No cookie access, broad browsing history, or arbitrary network-proxy capability. Uninstalling removes extension storage. Remove the key from settings and revoke it with its provider if you no longer need it.

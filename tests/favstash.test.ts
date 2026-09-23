@@ -1,4 +1,4 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';import {JSDOM} from 'jsdom';import {canonicalPostUrl,extractPostUrl,agentBrief} from '../src/favstash';import {extractPost} from '../src/linkedin';import {summarize} from '../src/core';
+import {test} from 'node:test';import assert from 'node:assert/strict';import {JSDOM} from 'jsdom';import {canonicalPostUrl,extractPostUrl,agentBrief,stashSaveUrl} from '../src/favstash';import {extractPost} from '../src/linkedin';import {summarize} from '../src/core';
 test('FavStash handoff rejects arbitrary URLs and strips tracking',()=>{assert.equal(canonicalPostUrl('https://evil.test/posts/hello'),null);assert.equal(canonicalPostUrl('javascript:alert(1)'),null);assert.equal(canonicalPostUrl('https://www.linkedin.com/feed/'),null);assert.equal(canonicalPostUrl('https://www.linkedin.com/posts/example-activity-1234567890123456789/?trk=x'),'https://www.linkedin.com/posts/example-activity-1234567890123456789/');});
 test('extracts source only from actual post links and modern sponsored labels are skipped',()=>{const d=new JSDOM('<div id="p" data-urn="urn:li:activity:1234567890123456789"></div><div id="ad"><p><span>Promoted</span></p><span data-testid="expandable-text-box">A sufficiently long sponsored post.</span></div>').window.document;assert.equal(extractPostUrl(d.querySelector('#p')!),'https://www.linkedin.com/feed/update/urn:li:activity:1234567890123456789/');assert.equal(extractPost(d.querySelector('#ad')!),null);});
 test('agent handoff asks for original evidence and approval before scheduling',()=>{const v={...summarize({fit:90,substance:90,value:80,slop:1,bait:0,recreate:85}),ms:10,inputTokens:100,outputTokens:20};const text=agentBrief('Source material',v);assert.match(text,/Do not schedule or publish until I approve/);assert.match(text,/not a virality prediction/);assert.match(text,/untrusted reference material/);});
@@ -10,4 +10,14 @@ test('accepts native LinkedIn short post links and unwraps only supported safety
  assert.equal(canonicalPostUrl('https://lnkd.in/p/dwbZVKeC/?trk=x'),'https://lnkd.in/p/dwbZVKeC');
  assert.equal(canonicalPostUrl('https://www.linkedin.com/safety/go/?url='+encodeURIComponent('https://lnkd.in/p/dwbZVKeC')+'&urlhash=test'),'https://lnkd.in/p/dwbZVKeC');
  for(const url of ['https://lnkd.in/not-a-post','https://lnkd.in.evil.test/p/dwbZVKeC','https://user:pass@lnkd.in/p/dwbZVKeC','https://www.linkedin.com/safety/go/?url=https://evil.test/p/dwbZVKeC'])assert.equal(canonicalPostUrl(url),null);
+});
+
+test('native save URL encodes notes without injecting parameters and respects app bounds',()=>{
+ const note='An angle & collection=other # idea + café';
+ const url=new URL(stashSaveUrl('https://lnkd.in/p/dwbZVKeC?trk=tracking',note));
+ assert.equal(url.searchParams.get('url'),'https://lnkd.in/p/dwbZVKeC');assert.equal(url.searchParams.get('note'),note);
+ assert.equal(url.searchParams.has('collection'),false);assert.equal(url.hash,'');
+ assert.equal(new URL(stashSaveUrl('https://lnkd.in/p/dwbZVKeC','')).searchParams.has('note'),false);
+ for(const bad of [null,{},'javascript:alert(1)','https://www.linkedin.com/posts/'+ 'a'.repeat(2100)])assert.throws(()=>stashSaveUrl(bad,''));
+ for(const bad of [null,{},'a'.repeat(1001)])assert.throws(()=>stashSaveUrl('https://lnkd.in/p/dwbZVKeC',bad));
 });
