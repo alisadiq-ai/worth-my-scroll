@@ -46,7 +46,7 @@ The ordinary localhost preview does not call Jev or accept credentials. Load the
 
 ## FavStash handoff
 
-For a post with enough personal fit, substance, and recreation potential, open **Why?** or the recreate chip. **Save in FavStash** opens the authenticated FavStash stash page. A companion panel offers **Prepare save form**. This fills the existing form; **nothing is saved until you click FavStash's Save item button**. You select a collection there. The source URL and recreation note are retained temporarily in extension session storage (up to an hour); the URL fragment contains only a random handoff identifier.
+Every rated post has **Save to Stash** beside **Why?**, with an info button explaining FavStash’s unified stash and MCP workflow. **Save to Stash** opens the authenticated FavStash stash page. A companion panel offers **Prepare save form**. This fills the existing form; **nothing is saved until you click FavStash's Save item button**. You select a collection there. The source URL and recreation note are retained temporarily in extension session storage (up to an hour); the URL fragment contains only a random handoff identifier.
 
 Some LinkedIn feed layouts hide the source URL. In that case, the extension asks you to use the post’s ⋯ menu → Copy link to post and paste it into the popover.
 

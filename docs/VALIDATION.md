@@ -2,7 +2,7 @@
 
 ## Verified
 
-- TypeScript check and 17 Node tests passed. Tests cover provider routing, schema translation, invalid output rejection, credential isolation, cache deduplication, budgets, pause, URL validation, and extraction.
+- TypeScript check and 18 Node tests passed. Tests cover provider routing, schema translation, invalid output rejection, credential isolation, cache deduplication, budgets, pause, URL validation, and extraction.
 - Live **Vercel Gateway** synthetic requests returned all six requested judgments. Four-case smoke sample: useful builder post green; hollow bait red; useful gardening post amber for builder preferences and green for gardener preferences. This is a behavior smoke check, not an accuracy benchmark.
 - In an isolated Chrome for Testing installation, the popup detected both known key prefixes and exposed a selector for unknown formats. A real Gateway key completed connect/test/enable in one action. Session-only storage, clearing the key field, pause and resume were verified.
 - Twelve browser checks passed: three live ratings, recreate chip, radar popover, repeat cache hit, narrow viewport, installed content-script scoring, sponsored-post exclusion, FavStash handoff creation, URL/note prefill, collection remaining a user choice, and pause removing ratings.
@@ -39,3 +39,7 @@ The browser harnesses are for a separately launched Chrome for Testing with the 
 ## Feed recovery fix (0.2.1)
 
 A newer popup can coexist with an older Chrome-cached content script until the extension itself is reloaded. The popup now reports feed connection/annotation counts or a scoring error. A successful connection test resets the feed scoring revision so previously failed posts can retry. A regression test covers failure recovery and restoring a badge removed by a feed rerender. There is no automatic loop retrying rejected paid requests. Health metadata stays in extension session storage; it contains counts, script version, timestamps, and sanitized errors, never post text or credentials.
+
+## Toolbar stash action (0.2.2)
+
+Save to Stash and an accessible info popover are available beside Why on every rated post, including red ratings. The same existing FavStash form handoff is used; the UI says Opened, not Saved. Unit regression verified the source URL and recreation note, missing-URL fallback, and low-score availability. The new toolbar and info popover were visually inspected in Chrome on synthetic posts. No real FavStash item was saved during this check.

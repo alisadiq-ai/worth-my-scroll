@@ -36,8 +36,7 @@ try{
  check('installed content script scores the fixture',await feed.locator('wms-rating').count()===1);
  check('modern sponsored post left untouched',await feed.locator('[componentkey="update-card-ad"] wms-rating').count()===0);
  await feed.screenshot({path:'output/playwright/content-script.png',fullPage:true});
- await feed.getByRole('button',{name:'Why?',exact:true}).click();
- const popup=context.waitForEvent('page');await feed.getByRole('button',{name:'Save in FavStash ↗'}).click();stash=await popup;await stash.waitForLoadState();
+ const popup=context.waitForEvent('page');await feed.getByRole('button',{name:'Save to Stash'}).click();stash=await popup;await stash.waitForLoadState();
  // Chrome-created tabs can begin before routing attaches. Validate the handoff,
  // then use a fresh controlled fixture tab to test the form helper.
  const handoffId=await page.evaluate(async()=>{const {handoffs}=await chrome.storage.session.get('handoffs');return Object.entries(handoffs).sort((a,b)=>b[1].at-a[1].at)[0][0];});
