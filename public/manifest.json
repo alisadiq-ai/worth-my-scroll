@@ -1,0 +1,60 @@
+{
+  "manifest_version": 3,
+  "name": "Worth My Scroll",
+  "version": "0.2.0",
+  "description": "Find your signal. Personal relevance and slop scores on LinkedIn, powered by Jev.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://ai-gateway.vercel.sh/*",
+    "https://api.typesafe.ai/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Worth My Scroll",
+    "default_popup": "popup.html"
+  },
+  "options_page": "popup.html",
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.linkedin.com/feed/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.favstash.app/dashboard/stash*"
+      ],
+      "js": [
+        "favstash-handoff.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'none'; connect-src https://ai-gateway.vercel.sh https://api.typesafe.ai"
+  },
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "fonts/*.ttf"
+      ],
+      "matches": [
+        "https://www.linkedin.com/*"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,97 @@
+# Worth My Scroll
+
+**Find your people. Find your next idea.** A personal LinkedIn reading companion by [FavStash](https://www.favstash.app), powered by [Jev](https://docs.typesafe.ai/api) directly or through [Vercel AI Gateway](https://vercel.com/docs/ai-gateway/modalities/evaluation).
+
+Private development preview. MIT-licensed source; not published to the Chrome Web Store.
+
+## What it does
+
+- Soft green, amber, and red outlines around visible feed posts.
+- Personal fit, substance, value, slop, and engagement-bait ratings with a radar chart and explanations in a “Why?” popover.
+- A **FavStash recreate score** on suitable posts: potential to develop an original angle using your experience, not a probability of going viral.
+- Editable plain-text preferences in the extension popup. A copyable ChatGPT prompt helps you write them; no OpenAI key is required.
+- Jev-only evaluation with your own direct TypeSafe key or Vercel AI Gateway key; provider auto-detection.
+- Local caching, request limits, a pause switch, and estimated cost per 1,000 new posts.
+- A synthetic test feed with clearly labelled illustrative and live scoring modes.
+- FavStash handoff: opens your existing stash, helps fill the public link and recreation note, then lets you select a collection and confirm Save. No FavStash API key is required.
+- Copy an agent brief to brainstorm in Codex/ChatGPT using your connected FavStash account. Scheduling remains a separate, user-approved action in that agent.
+
+## Run locally
+
+Node 22+ and npm:
+
+```sh
+npm ci
+npm run typecheck
+npm test
+npm run build
+```
+
+Open `chrome://extensions`, enable **Developer mode**, choose **Load unpacked**, and select this project's `dist` directory. Click the extension icon. Paste your **TypeSafe/Jev or Vercel AI Gateway key**, edit your interests, accept the data notice, and click **Connect & start scoring**. Connection testing and activation happen in the same popup. No separate settings page or OpenAI key is needed. Refresh LinkedIn's home feed after installing or reloading the extension.
+
+The key may be session-only (default) or remembered locally if you choose. It is never bundled in the extension. The public extension cannot access the developer's shared MCP secret store.
+
+```sh
+npm run preview     # http://127.0.0.1:4173 — illustrative browser preview
+npm run package     # worth-my-scroll.zip — installable unpacked archive
+```
+
+The ordinary localhost preview does not call Jev or accept credentials. Load the extension to test the actual worker and API. The bundled `demo.html` is an internal synthetic QA fixture, not a public landing page. `popup.html` contains the complete product setup; the legacy `options.html` URL renders that same interface.
+
+## Provider detection
+
+`vck_` keys select Vercel AI Gateway (`/v1/evaluate`, `typesafe-ai/jev`); `ts_` keys select TypeSafe directly (`/v1/systemone`, `jev-latest`). Unrecognized formats reveal a provider picker in the same popup. A credential is never tried against both services. Direct requests translate boolean questions to TypeSafe’s `noul` type and normalize its snake_case token usage.
+
+**Verification:** Gateway has been tested live with real credentials. The direct adapter is tested against the documented request/response contract, but has not yet been tested with a live direct TypeSafe key.
+
+## FavStash handoff
+
+For a post with enough personal fit, substance, and recreation potential, open **Why?** or the recreate chip. **Save in FavStash** opens the authenticated FavStash stash page. A companion panel offers **Prepare save form**. This fills the existing form; **nothing is saved until you click FavStash's Save item button**. You select a collection there. The source URL and recreation note are retained temporarily in extension session storage (up to an hour); the URL fragment contains only a random handoff identifier.
+
+Some LinkedIn feed layouts hide the source URL. In that case, the extension asks you to use the post’s ⋯ menu → Copy link to post and paste it into the popover.
+
+If you are not signed in, sign in to FavStash and reopen the handoff from the post. If FavStash changes its form, the helper falls back to copying the link for manual saving. The extension never reads FavStash auth tokens, calls private APIs, or posts/schedules content for you. Demo posts intentionally have no real source URL.
+
+## Costs
+
+The Gateway catalog on 2026-09-23 lists Jev at **$0.042 per million input tokens**, output **$0**. At 1,000 input tokens per post, 1,000 uncached posts would be approximately **$0.042**. This is an estimate, not a bill or permanent price promise. Longer posts/preferences cost more. Credits, promotional pricing, provider changes, retries, and other Gateway usage affect actual billing.
+
+The popup estimates cost using average successful request token usage. Gateway pricing refreshes when a key is saved; direct TypeSafe uses the dated documented price snapshot. In the 2026-09-23 four-case synthetic test, the estimate was **$0.0392 per 1,000 posts**. A later three-post browser test averaged **0.40 seconds** per response. These are small smoke samples, not latency or cost guarantees. Tests of the connection are excluded from the scrolling usage counter. Cached posts issue no new evaluation. Changing preferences or providers creates a different cache entry.
+
+## How scores work
+
+Six typed questions share one request: fit, substance, value, slop, recreate (ordered five-point scales), plus bait (boolean probability). The UI normalizes scales to 0–100.
+
+`utility = clamp(0.50 × fit + 0.30 × substance + 0.20 × value − 0.12 × bait − 0.12 × slop)`
+
+- **Red:** high slop with little substance, or extreme bait with very little substance.
+- **Green:** strong personal fit, sufficient substance, and utility of at least 65.
+- **Amber:** everything else, including useful posts outside your interests.
+
+Recreate potential is a separate score. It is shown with a FavStash handoff when fit ≥60, substance ≥50, and recreate ≥50. Every weight and threshold is public in `src/core.ts` / `src/badge.ts`; these are product heuristics, not statistically calibrated accuracy claims.
+
+## Privacy and limits
+
+Read [Privacy](docs/PRIVACY.md) and [Validation](docs/VALIDATION.md).
+
+No telemetry or extension backend. Keys/preferences are never synced. Visible post text and preferences are sent to TypeSafe directly, or to Vercel Gateway for TypeSafe processing, only after enabling analysis. Text can contain personal information even though author metadata is not deliberately extracted. Provider processing policies still apply.
+
+English-first and visible text only. No media interpretation, auto-expansion, article fetching, automatic scrolling, likes, messages, or follows. Slop measures filler/hype, not proof of AI authorship. Recreate measures creative potential, not virality. LinkedIn's frequently changing markup may require adapter updates.
+
+LinkedIn's [third-party extension policy](https://www.linkedin.com/help/linkedin/answer/a1341387) restricts reading/modifying its pages. This experimental tool is not endorsed by LinkedIn. Keep the synthetic demo/manual workflow available when evaluating that tradeoff.
+
+## Project structure
+
+- `src/provider.ts`: provider detection and fixed endpoint/model mapping.
+- `src/core.ts`: API contract, typed rubric, response validation, scoring, pricing.
+- `src/background.ts`: scoped credentials, consent, cache, concurrency, request budgets.
+- `src/linkedin.ts`, `src/content.ts`: extraction and visible-feed observation.
+- `src/badge.ts`: isolated badge UI and FavStash actions.
+- `src/favstash*.ts`: public URL validation and user-confirmed form handoff.
+- `src/ui.ts`, `public/ui.css`: popup and internal synthetic demo.
+- `tests/`: worker boundary, scoring, extraction, and error tests.
+- `scripts/live-smoke.mjs`: optional synthetic live evaluation via an environment-provided key. Results go to ignored `output/`.
+
+## Credits and license
+
+MIT © 2026 Ali Sadiq. Original implementation, inspired by [SlopMop](https://github.com/tomfrazier/slopmop), [Your Signal](https://github.com/MithrilMan/your-signal), and [Unslop](https://github.com/sapountzis/Unslop). No source files were copied from those projects. FavStash colors follow the owner's design foundations; Worth My Scroll uses a distinct mark. Sora is bundled under the SIL Open Font License (see `public/fonts/OFL.txt`). No proprietary font binaries are included. The software license does not grant rights to third-party trademarks or imply affiliation with LinkedIn, Vercel, or TypeSafe.

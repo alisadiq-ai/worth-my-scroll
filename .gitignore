@@ -1,0 +1,10 @@
+node_modules/
+dist/
+output/
+*.zip
+.env*
+!.env.example
+*.pem
+.DS_Store
+.playwright-cli/
+.browser-profile/

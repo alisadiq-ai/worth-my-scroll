@@ -1,0 +1,25 @@
+{
+  "name": "worth-my-scroll",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "A little more signal in your LinkedIn scroll. Powered by Jev.",
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "preview": "node scripts/serve.mjs",
+    "package": "npm run build && cd dist && zip -qr ../worth-my-scroll.zip .",
+    "smoke": "node scripts/live-smoke.mjs"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.1.24",
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^22.0.0",
+    "esbuild": "^0.25.0",
+    "jsdom": "^26.1.0",
+    "playwright": "^1.63.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

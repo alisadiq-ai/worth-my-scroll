@@ -1,0 +1,37 @@
+# Validation — 2026-09-23
+
+## Verified
+
+- TypeScript check and 16 Node tests passed. Tests cover provider routing, schema translation, invalid output rejection, credential isolation, cache deduplication, budgets, pause, URL validation, and extraction.
+- Live **Vercel Gateway** synthetic requests returned all six requested judgments. Four-case smoke sample: useful builder post green; hollow bait red; useful gardening post amber for builder preferences and green for gardener preferences. This is a behavior smoke check, not an accuracy benchmark.
+- In an isolated Chrome for Testing installation, the popup detected both known key prefixes and exposed a selector for unknown formats. A real Gateway key completed connect/test/enable in one action. Session-only storage, clearing the key field, pause and resume were verified.
+- Twelve browser checks passed: three live ratings, recreate chip, radar popover, repeat cache hit, narrow viewport, installed content-script scoring, sponsored-post exclusion, FavStash handoff creation, URL/note prefill, collection remaining a user choice, and pause removing ratings.
+- FavStash prefill was tested against a synthetic form matching the current application markup. No real item was saved or scheduled.
+- Earlier build displayed live ratings on Ali's personal LinkedIn feed. The revised 0.2 build requires an extension reload and feed refresh before personal-profile visual acceptance.
+
+## Measurements
+
+The four-case six-question API smoke run used 3,735 input tokens: estimated **$0.0392175 per 1,000 similar uncached posts**, using the $0.042/M input and free-output price snapshot. Its responses took 359–558 ms. The later three-post browser run averaged 401 ms (2,914 input tokens total). Tiny samples; network, provider load, text length and preferences affect results. Billing was not reconciled against an invoice.
+
+## Remaining limits
+
+- Direct TypeSafe support uses the [documented native API](https://docs.typesafe.ai/api). Its adapter and routing are contract-tested, **not live-authentication tested** because no direct TypeSafe key was available.
+- Detected prefixes are `vck_` (Gateway) and `ts_` (TypeSafe). Unknown formats require explicit provider selection; no credential is sent to an inferred fallback host.
+- The score wheel shows six signal dimensions; it is not a calibrated confidence chart. When the provider supplies score confidence, the UI labels its average separately as model confidence. Confidence does not equal measured accuracy.
+- “Slop” is a quality heuristic, not AI-authorship detection. “Recreate” is creative potential, not a virality prediction. Substance scores can also vary with context.
+- LinkedIn can change markup. Some layouts hide public URLs, requiring the user to copy the post link before the FavStash handoff.
+- The real authenticated FavStash form still needs a user acceptance check. A fixture passing does not prove a remote save. Nothing is automatically saved or posted.
+- No landing page, public distribution, Chrome Web Store release, or LinkedIn post has been published.
+
+## Repeat checks
+
+```sh
+npm ci
+npm run typecheck
+npm test
+npm run build
+```
+
+Optional live smoke: provide `AI_GATEWAY_API_KEY` in the process environment and run `npm run smoke`. Never put a real key in a command argument, source file, screenshot, or commit.
+
+The browser harnesses are for a separately launched Chrome for Testing with the unpacked extension and a dedicated profile/CDP endpoint. Never attach them to a normal personal browser. `scripts/popup-check.mjs` uses an environment key; `scripts/browser-check.mjs` assumes that isolated extension has been provisioned. Reports and screenshots go to ignored `output/`.

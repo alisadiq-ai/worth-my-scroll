@@ -1,0 +1,26 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+test('worker protects credentials, deduplicates requests, caches, budgets and pauses',async()=>{
+ const local:Record<string,any>={},session:Record<string,any>={};let listener:any;const accesses:string[]=[];
+ function area(data:Record<string,any>){return {get:async(key:string)=>({[key]:data[key]}),set:async(v:any)=>Object.assign(data,structuredClone(v)),remove:async(key:string)=>{delete data[key];},setAccessLevel:async(v:any)=>{accesses.push(v.accessLevel);}};}
+ (globalThis as any).chrome={storage:{local:area(local),session:area(session)},runtime:{id:'test',getURL:(p:string)=>`chrome-extension://test/${p}`,onMessage:{addListener:(fn:any)=>listener=fn},onInstalled:{addListener:()=>{}}}};
+ let calls=0;const oldFetch=globalThis.fetch;
+ globalThis.fetch=async(url)=>{if(String(url).endsWith('/models'))return Response.json({data:[]});calls++;await new Promise(r=>setTimeout(r,10));return Response.json({answers:{fit:{type:'score',score:4},substance:{type:'score',score:4},value:{type:'score',score:4},slop:{type:'score',score:0},recreate:{type:'score',score:4},bait:{type:'boolean',probability:0}},usage:{inputTokens:1000,outputTokens:160}});};
+ try{
+  await import('../src/background');
+  const own={id:'test',url:'chrome-extension://test/options.html'};const feed={id:'test',url:'https://www.linkedin.com/feed/'};
+  const send=(message:any,sender=own)=>new Promise<any>(resolve=>listener(message,sender,resolve));
+  assert.equal((await send({type:'SAVE_KEY',key:'vck_test-key-with-enough-characters',remember:false})).ok,true);
+  assert.equal(local.gatewayKey,undefined);assert.ok(session.gatewayKey);assert.equal(accesses.length,2);
+  assert.equal((await send({type:'GET_STATE'},feed)).ok,false);
+  const pub=await send({type:'GET_PUBLIC'},feed);assert.equal(JSON.stringify(pub).includes('test-key'),false);
+  const settings={preferences:'AI founders and real implementations',enabled:true,consent:true,dailyLimit:2};await send({type:'SAVE_SETTINGS',settings});
+  const post='A concrete product release with benchmarks and honest tradeoffs.';
+  const [a,b]=await Promise.all([send({type:'EVALUATE',post},feed),send({type:'EVALUATE',post},feed)]);assert.equal(a.ok,true);assert.equal(b.ok,true);assert.equal(calls,1);
+  assert.equal((await send({type:'EVALUATE',post},feed)).data.cached,true);assert.equal(calls,1);
+  await send({type:'SAVE_SETTINGS',settings:{...settings,preferences:'Gardening and outdoor projects'}});
+  await send({type:'EVALUATE',post},feed);assert.equal(calls,2);
+  const limited=await send({type:'EVALUATE',post:post+' A different post.'},feed);assert.match(limited.error,/Daily request limit/);assert.equal(calls,2);
+  await send({type:'SAVE_SETTINGS',settings:{...settings,enabled:false}});assert.equal((await send({type:'EVALUATE',post},feed)).ok,false);
+  assert.equal((await send({type:'REMOVE_KEY'})).ok,true);assert.equal(session.gatewayKey,undefined);
+ }finally{globalThis.fetch=oldFetch;}
+});
