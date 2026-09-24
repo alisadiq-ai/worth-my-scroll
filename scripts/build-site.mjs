@@ -15,6 +15,7 @@ if (requested) {
 await rm(out, { recursive: true, force: true });
 await mkdir(path.join(out, 'assets'), { recursive: true });
 await cp(path.join(root, 'site'), out, { recursive: true });
+await cp(path.join(root, 'public', 'icon128.png'), path.join(out, 'favicon.png'));
 for (const name of ['logo.svg', 'fonts/sora-regular.ttf', 'fonts/sora-semibold.ttf', 'fonts/OFL.txt']) {
   await cp(path.join(root, 'public', name), path.join(out, 'assets', path.basename(name)));
 }
@@ -37,5 +38,5 @@ const privacyBody = privacySource.trim().split(/\n\n+/).map(block => {
   if (block.startsWith('- ')) return `<ul>${block.split('\n').map(line => `<li>${escape(line.replace(/^- /, ''))}</li>`).join('')}</ul>`;
   return `<p>${escape(block)}</p>`;
 }).join('\n');
-await writeFile(path.join(out, 'privacy.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Privacy — Worth My Scroll</title><meta name="robots" content="noindex,follow"><link rel="stylesheet" href="/styles.css"><link rel="icon" href="/assets/logo.svg"></head><body><main class="wrap section" style="max-width:800px"><a class="text-link" href="/">← Worth My Scroll</a><article style="margin-top:45px">${privacyBody}</article><h2>Landing page hosting</h2><p>This website is hosted on Vercel. Vercel processes network requests to serve the site under its own policies. This page adds no analytics scripts or advertising trackers.</p></main></body></html>`);
+await writeFile(path.join(out, 'privacy.html'), `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Privacy — Worth My Scroll</title><meta name="robots" content="noindex,follow"><link rel="stylesheet" href="/styles.css"><link rel="icon" href="/favicon.png" type="image/png" sizes="128x128"></head><body><main class="wrap section" style="max-width:800px"><a class="text-link" href="/">← Worth My Scroll</a><article style="margin-top:45px">${privacyBody}</article><h2>Landing page hosting</h2><p>This website is hosted on Vercel. Vercel processes network requests to serve the site under its own policies. This page adds no analytics scripts or advertising trackers.</p></main></body></html>`);
 await cp(path.join(root, 'LICENSE'), path.join(out, 'LICENSE.txt'));
