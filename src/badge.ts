@@ -10,8 +10,8 @@ export const badgeCSS=`
 .stash-actions{margin-left:auto;display:flex;align-items:center;gap:6px;flex-shrink:0}.save-stash{border:1px solid #dce3f0;border-radius:5px;padding:4px 8px;background:#f6f8fc;color:#3458a8;font-size:10px;white-space:nowrap}.save-stash:hover{background:#eff4fc;border-color:#6f96ed}.save-stash:disabled{opacity:.5;cursor:default}.stash-info{width:18px;height:18px;padding:0;border:1px solid #dce3f0;border-radius:50%;color:#858da3;background:#fff;font-size:10px}.stash-info:hover{color:#9b3f8c;border-color:#f09de5}.stash-info-panel,.stash-link-panel{width:310px;font-size:11px;line-height:1.8}.stash-info-panel .headline{font-size:14px;max-width:220px;line-height:1.5}.stash-info-panel p,.stash-link-panel p{color:#69718a}.stash-info-panel ol{padding-left:17px;color:#69718a}.stash-info-panel li{padding-left:3px;margin:9px 0}.stash-info-panel a{color:#466fd2;text-decoration:none;font-weight:600}.stash-link-panel label{display:block;font-size:10px;color:#69718a}.stash-link-panel input{display:block;width:100%;margin:6px 0 14px;padding:9px;border:1px solid #dce3f0;border-radius:6px}.stash-link-panel .dismiss{margin-left:12px}.stash-notice{color:#ba4637!important}.bar{flex-wrap:wrap}.bar .recreate-chip{flex-shrink:0}
 @media(max-width:500px){.bar{gap:6px;padding:9px 10px}.recreate-chip{font-size:9px}.label{font-size:10px}}
 `;
-export function mountBadge(post:HTMLElement,verdict:Verdict,onDismiss?:()=>void){
- post.querySelector(':scope > wms-rating')?.remove();
+export function mountBadge(post:HTMLElement,verdict:Verdict,onDismiss?:()=>void,container?:HTMLElement){
+ if(!container)post.querySelector(':scope > wms-rating')?.remove();
  const colors={green:['#1b7548','#e7f5ec','#8acda4'],amber:['#936216','#fff4d9','#e4c06f'],red:['#ba4637','#fdebe7','#e7a395']}[verdict.tone];
  post.style.setProperty('--wms-outline',colors[2]);post.classList.add('wms-rated');
  const host=document.createElement('wms-rating');const root=host.attachShadow({mode:'open'});
@@ -49,5 +49,5 @@ export function mountBadge(post:HTMLElement,verdict:Verdict,onDismiss?:()=>void)
  close.onclick=()=>details.hidePopover();
  details.addEventListener('toggle',()=>why.setAttribute('aria-expanded',String(details.matches(':popover-open'))));
  why.onclick=()=>{if(details.matches(':popover-open')){details.hidePopover();return;}details.showPopover();const r=why.getBoundingClientRect();details.style.left=`${Math.max(10,Math.min(innerWidth-350,r.right-340))}px`;const height=details.getBoundingClientRect().height;details.style.top=`${Math.max(12,Math.min(innerHeight-height-12,r.bottom+8))}px`;close.focus({preventScroll:true});};
- post.prepend(host);return host;
+ if(container)container.append(host);else post.prepend(host);return host;
 }

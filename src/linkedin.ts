@@ -1,5 +1,5 @@
 export const POST_SELECTOR='[role="listitem"][componentkey^="update-card"], .feed-shared-update-v2[data-urn], [data-id^="urn:li:activity:"]';
-const TEXT_SELECTOR='[data-testid="expandable-text-box"], .feed-shared-update-v2__description, .update-components-text, .feed-shared-text';
+export const TEXT_SELECTOR='[data-testid="expandable-text-box"], .feed-shared-update-v2__description, .update-components-text, .feed-shared-text';
 export function extractPost(el:Element):string|null {
  if([...el.querySelectorAll('p,span')].some(e=>!e.closest(TEXT_SELECTOR)&&/^(Promoted|Sponsored|Anzeige|Gesponsert)$/i.test(e.textContent?.trim()||'')))return null;
  const ad=el.querySelector('[data-ad-id], [data-sponsored], .feed-shared-actor__sub-description');
