@@ -15,9 +15,9 @@ Open http://127.0.0.1:4180. Edit `site/index.html`, `site/styles.css`, and `site
 
 - FavStash family: Sora, blue actions, pink accents, pale backgrounds, navy feature section.
 - Original Worth My Scroll logo reused from `public/logo.svg`.
-- Demo reuses the approved full-width 9-second GIF in `docs/demo/`; sidebar remains visible.
-- Real product screenshot in the hero. Demo GIF autoplays when loaded, with a pause/replay control. Reduced-motion users see the WebP poster until they choose Play. No third-party fonts, analytics, or external runtime dependencies.
-- Hero screenshot and demo are actual usage. Full-width navy demo and usage sections alternate with the light content sections.
+- The hero plays the approved 9-second GIF from `docs/demo/`; the LinkedIn sidebar remains visible. There is no separate demo section.
+- The GIF autoplays with a pause/replay control. Reduced-motion users see the WebP poster until they choose Play. No third-party fonts, analytics, or external runtime dependencies.
+- The light content sections lead into a navy usage section.
 - Copy covers real-time Jev scoring, ultra-low usage cost, LinkedIn feed filtering, Chrome extensions, open-source productivity, AI slop, and content repurposing. The roughly $0.04/1,000-post estimate links to dated provider pricing and its 1,000-input-token assumption. No ranking guarantee or AI-authorship claim.
 - Native FavStash handoff described accurately: prefill, choose collection, confirm. Publishing requires approval and supported connected accounts.
 
